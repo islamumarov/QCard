@@ -7,6 +7,12 @@ scored **feedback report** — what was strong, what to improve, and what the
 interviewer expected. Everything (sessions, questions, full conversation logs,
 feedback) is persisted to **SQLite**.
 
+## Screenshots
+
+| Landing | Interview |
+|---------|-----------|
+| ![Landing page](screenshots/01-landing.png) | ![Interview page](screenshots/02-interview.png) |
+
 - 🎤 **Speech-to-text** — answer by talking (Web Speech API)
 - 🔊 **Text-to-speech** — the interviewer reads questions aloud
 - 🧠 **Adaptive follow-ups** — generated from your actual answer (`claude-opus-4-8`)
@@ -177,3 +183,7 @@ The `predev`/`prestart` guard now catches this before the server starts.
 - API routes run on the Node.js runtime (`better-sqlite3` is native); `next.config.mjs`
   marks it as a server-external package.
 - The DB is created on first request — no manual migration step needed.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
