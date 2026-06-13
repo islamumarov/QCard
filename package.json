@@ -1,0 +1,39 @@
+{
+  "name": "qcard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Behavioral interview card game with AI follow-ups, feedback, TTS & STT",
+  "scripts": {
+    "check:node": "node scripts/check-node.mjs",
+    "predev": "npm run check:node",
+    "dev": "next dev",
+    "build": "next build",
+    "prestart": "npm run check:node",
+    "start": "next start",
+    "lint": "next lint",
+    "predb:seed": "npm run check:node",
+    "db:seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "@google/genai": "^2.8.0",
+    "better-sqlite3": "^11.8.1",
+    "next": "15.5.19",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^20.17.16",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}
