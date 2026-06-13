@@ -114,7 +114,7 @@ Add another provider by implementing the `JsonLLM` interface in
 | `QCARD_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model. |
 | `QCARD_MAIN_QUESTIONS` | `5` | Main questions per interview. |
 | `QCARD_MAX_FOLLOWUPS` | `2` | Max follow-ups the interviewer may ask per card. |
-| `QCARD_DB_PATH` | `./data/qcard.db` | SQLite file location. |
+| `QCARD_DB_PATH` | `<projectRoot>/data/qcard.db` | SQLite file location. If the configured path doesn't exist, the app searches the project structure (anchored on `package.json`, from both cwd and the module dir) for an existing `qcard.db` before creating a new one — so it resolves correctly even when launched from another directory. |
 
 ## Project layout
 

@@ -14,15 +14,99 @@ import type {
   SessionRow,
 } from "./types";
 
-const DB_PATH = process.env.QCARD_DB_PATH || path.join(process.cwd(), "data", "qcard.db");
 export const MAIN_QUESTIONS = Number(process.env.QCARD_MAIN_QUESTIONS || 5);
+
+// Walk up from `start` until a directory containing package.json — the project
+// root — regardless of the current working directory the server was launched from.
+function findProjectRoot(start: string): string {
+  let dir = start;
+  for (let i = 0; i < 12; i++) {
+    if (fs.existsSync(path.join(dir, "package.json"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return start;
+}
+
+// Anchor project-root search on both the current working directory AND this
+// module's own location, so the DB is found even when the server is launched
+// from a different cwd (the module dir reliably sits under the project root).
+function projectRoots(): string[] {
+  const anchors: string[] = [];
+  try {
+    // __dirname exists in CommonJS output (Next server, tsx); guard for ESM.
+    if (typeof __dirname !== "undefined") anchors.push(__dirname);
+  } catch {
+    /* ignore */
+  }
+  anchors.push(process.cwd());
+  return [...new Set(anchors.map(findProjectRoot))];
+}
+
+function isExistingDbFile(p: string): boolean {
+  try {
+    return fs.statSync(p).isFile() && fs.statSync(p).size > 0;
+  } catch {
+    return false;
+  }
+}
+
+// Resolve the SQLite path robustly:
+//  1. Use the configured/located path if it already exists.
+//  2. Otherwise search the project structure for an existing qcard.db.
+//  3. Otherwise create one at the configured path, or <projectRoot>/data/qcard.db.
+function resolveDbPath(): string {
+  const roots = projectRoots();
+  const primaryRoot = roots[0];
+  const configured = process.env.QCARD_DB_PATH;
+
+  const candidates: string[] = [];
+  if (configured) {
+    if (path.isAbsolute(configured)) {
+      candidates.push(configured);
+    } else {
+      // a relative path could be meant relative to cwd or to any project root
+      candidates.push(path.resolve(process.cwd(), configured));
+      for (const r of roots) candidates.push(path.resolve(r, configured));
+    }
+  }
+  // project-structure fallbacks, for every discovered root
+  for (const r of roots) {
+    candidates.push(path.join(r, "data", "qcard.db"));
+    candidates.push(path.join(r, "qcard.db"));
+  }
+
+  const seen = new Set<string>();
+  const unique = candidates.filter((c) => (seen.has(c) ? false : (seen.add(c), true)));
+
+  // 1 + 2: prefer the first candidate that already exists on disk.
+  const existing = unique.find(isExistingDbFile);
+  if (existing) {
+    if (existing !== unique[0]) {
+      console.warn(`[qcard] DB not at the configured/primary path; using existing DB found at ${existing}`);
+    }
+    return existing;
+  }
+
+  // 3: nothing exists yet — create at the configured path, else <projectRoot>/data/qcard.db.
+  const target =
+    configured && path.isAbsolute(configured)
+      ? configured
+      : configured
+        ? path.resolve(primaryRoot, configured)
+        : path.join(primaryRoot, "data", "qcard.db");
+  console.warn(`[qcard] No existing database found; creating a new one at ${target}`);
+  return target;
+}
 
 // Reuse a single connection across hot reloads in dev (Next re-evaluates modules).
 const globalForDb = globalThis as unknown as { __qcardDb?: Database.Database };
 
 function init(): Database.Database {
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  const db = new Database(DB_PATH);
+  const dbPath = resolveDbPath();
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   migrate(db);
