@@ -1,5 +1,6 @@
 import { getActiveSessionQuestion, getFeedback, getMessages, getQuestion, getSession } from "./db";
 import { activeProvider } from "./llm";
+import { getMethodology } from "./methodologies";
 import type { InterviewState, Turn } from "./types";
 
 // Build the full client-facing state for a session from the DB.
@@ -32,6 +33,8 @@ export function buildInterviewState(sessionId: string): InterviewState | null {
   else if (finished) awaiting = "feedback";
   else awaiting = "answer";
 
+  const m = getMethodology(session.methodology);
+
   return {
     sessionId,
     status: session.status,
@@ -39,6 +42,7 @@ export function buildInterviewState(sessionId: string): InterviewState | null {
     currentMainIndex: session.current_main_index,
     awaiting,
     provider: activeProvider(),
+    methodology: { id: m.id, name: m.name, expansion: m.expansion, steps: m.steps.map((s) => s.name) },
     transcript,
     currentQuestion,
     feedback,

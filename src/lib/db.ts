@@ -2,11 +2,13 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { DEFAULT_METHODOLOGY, getMethodology } from "./methodologies";
 import { QUESTION_BANK } from "./questions";
 import type {
   Feedback,
   FeedbackRow,
   MessageKind,
+  MethodologyId,
   MessageRole,
   MessageRow,
   Question,
@@ -134,7 +136,8 @@ function migrate(db: Database.Database) {
       finished_at         TEXT,
       status              TEXT NOT NULL DEFAULT 'in_progress',
       main_question_count INTEGER NOT NULL,
-      current_main_index  INTEGER NOT NULL DEFAULT 0
+      current_main_index  INTEGER NOT NULL DEFAULT 0,
+      methodology         TEXT NOT NULL DEFAULT 'star'
     );
 
     CREATE TABLE IF NOT EXISTS session_questions (
@@ -170,6 +173,17 @@ function migrate(db: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_fb_session ON feedbacks(session_id);
   `);
+
+  // Additive migrations for databases created before a column existed.
+  ensureColumn(db, "sessions", "methodology", "TEXT NOT NULL DEFAULT 'star'");
+}
+
+// Add a column to an existing table if it isn't already present.
+function ensureColumn(db: Database.Database, table: string, column: string, ddl: string) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+  }
 }
 
 function seedQuestions(db: Database.Database) {
@@ -218,15 +232,15 @@ function pickQuestions(db: Database.Database, n: number): Question[] {
   return shuffle(picked).slice(0, n);
 }
 
-export function createSession(): SessionRow {
+export function createSession(methodology: MethodologyId = DEFAULT_METHODOLOGY): SessionRow {
   const db = getDb();
   const id = randomUUID();
   const questions = pickQuestions(db, MAIN_QUESTIONS);
 
   const tx = db.transaction(() => {
     db.prepare(
-      "INSERT INTO sessions (id, created_at, status, main_question_count, current_main_index) VALUES (?, ?, 'in_progress', ?, 0)",
-    ).run(id, now(), MAIN_QUESTIONS);
+      "INSERT INTO sessions (id, created_at, status, main_question_count, current_main_index, methodology) VALUES (?, ?, 'in_progress', ?, 0, ?)",
+    ).run(id, now(), MAIN_QUESTIONS, methodology);
 
     const insertSQ = db.prepare(
       "INSERT INTO session_questions (session_id, question_id, position, status) VALUES (?, ?, ?, ?)",
@@ -235,8 +249,8 @@ export function createSession(): SessionRow {
   });
   tx();
 
-  // Intro + first card as opening interviewer messages.
-  addMessage(id, null, "interviewer", "intro", INTRO_TEXT);
+  // Intro (mentions the chosen framework) + first card as opening interviewer messages.
+  addMessage(id, null, "interviewer", "intro", introText(methodology));
   const firstSQ = getSessionQuestionByPosition(id, 0)!;
   const firstQ = getQuestion(firstSQ.question_id)!;
   addMessage(id, firstSQ.id, "interviewer", "main", firstQ.text);
@@ -244,9 +258,13 @@ export function createSession(): SessionRow {
   return getSession(id)!;
 }
 
-const INTRO_TEXT =
-  "Welcome — thanks for making the time. I'll ask you a few behavioral questions. " +
-  "Take your time, use specific examples (Situation, Task, Action, Result), and answer as if this were a real interview. Let's begin.";
+function introText(methodologyId: MethodologyId): string {
+  const m = getMethodology(methodologyId);
+  return (
+    `Welcome — thanks for making the time. I'll ask you ${MAIN_QUESTIONS} behavioral questions. ` +
+    `Please structure each answer with the ${m.name} method — ${m.expansion} — and answer as if this were a real interview. Let's begin.`
+  );
+}
 
 // ---- Getters -------------------------------------------------------------
 

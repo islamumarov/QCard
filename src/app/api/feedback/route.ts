@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     // Idempotent: return existing feedback if already generated.
     if (getFeedback(sessionId)) return NextResponse.json(buildInterviewState(sessionId));
 
-    const feedback = await generateFeedback(getMessages(sessionId));
+    const feedback = await generateFeedback(getMessages(sessionId), session.methodology);
     saveFeedback(sessionId, feedback);
     addMessage(sessionId, null, "interviewer", "feedback", feedback.overall);
     completeSession(sessionId);

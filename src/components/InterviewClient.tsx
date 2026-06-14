@@ -141,8 +141,14 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* active provider */}
-      <div className="flex justify-end">
+      {/* framework + active provider */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <span
+          className="chip border-accent2/30 bg-accent2/10"
+          title={`Answering with the ${state.methodology.name} framework: ${state.methodology.expansion}`}
+        >
+          🧩 {state.methodology.name} · {state.methodology.steps.join(" → ")}
+        </span>
         <span className="chip" title={state.provider.enabled ? "AI provider in use" : "No API key — using offline fallbacks"}>
           {state.provider.enabled ? "🤖" : "💤"} {providerLabel} · {state.provider.model}
           {!state.provider.enabled && " (offline)"}

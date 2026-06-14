@@ -1,16 +1,17 @@
 // LLM facade: selects the configured provider (Anthropic or Gemini) and exposes
 // the two interview operations. Prompt building, the follow-up cap, fallbacks,
 // and result normalization live here so they are identical across providers.
-import type { AnswerAnalysis, Feedback, MessageRow } from "../types";
+import { getMethodology } from "../methodologies";
+import type { AnswerAnalysis, Feedback, MessageRow, MethodologyId } from "../types";
 import { createAnthropicProvider } from "./anthropic";
 import { createGeminiProvider } from "./gemini";
 import {
-  FEEDBACK_SYSTEM,
-  INTERVIEWER_SYSTEM,
   MAX_FOLLOWUPS,
   fallbackBridge,
   fallbackFeedback,
   fallbackFollowup,
+  feedbackSystem,
+  interviewerSystem,
   renderFullTranscript,
   renderQuestionTranscript,
 } from "./prompts";
@@ -48,7 +49,7 @@ export const llmEnabled = (): boolean => getProvider().enabled;
 
 // ---- analyze a candidate answer -> follow-up or move on ----
 
-export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMain }: AnalyzeParams): Promise<AnswerAnalysis> {
+export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMain, methodology }: AnalyzeParams): Promise<AnswerAnalysis> {
   const provider = getProvider();
   const reachedLimit = followupsAsked >= MAX_FOLLOWUPS;
 
@@ -67,7 +68,7 @@ export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMa
 
   try {
     const parsed = (await provider.generateJSON({
-      system: INTERVIEWER_SYSTEM,
+      system: interviewerSystem(getMethodology(methodology)),
       user,
       schema: "analysis",
       maxTokens: 2048,
@@ -85,15 +86,17 @@ export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMa
 
 // ---- final feedback over the whole interview ----
 
-export async function generateFeedback(allMessages: MessageRow[]): Promise<Feedback> {
+export async function generateFeedback(allMessages: MessageRow[], methodology: MethodologyId): Promise<Feedback> {
   const provider = getProvider();
-  if (!provider.enabled) return fallbackFeedback(provider.id === "gemini" ? "GEMINI" : "ANTHROPIC");
+  const m = getMethodology(methodology);
+  const providerName = provider.id === "gemini" ? "GEMINI" : "ANTHROPIC";
+  if (!provider.enabled) return fallbackFeedback(providerName, m);
 
   const transcript = renderFullTranscript(allMessages);
 
   try {
     const parsed = (await provider.generateJSON({
-      system: FEEDBACK_SYSTEM,
+      system: feedbackSystem(m),
       user: `Full interview transcript:\n\n${transcript}\n\nProduce the structured feedback.`,
       schema: "feedback",
       maxTokens: 3072,
@@ -104,6 +107,6 @@ export async function generateFeedback(allMessages: MessageRow[]): Promise<Feedb
     return parsed;
   } catch (err) {
     console.error(`[${provider.id}] generateFeedback failed`, err);
-    return fallbackFeedback(provider.id === "gemini" ? "GEMINI" : "ANTHROPIC");
+    return fallbackFeedback(providerName, m);
   }
 }

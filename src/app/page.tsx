@@ -2,18 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { InterviewState } from "@/lib/types";
+import { DEFAULT_METHODOLOGY, METHODOLOGY_LIST } from "@/lib/methodologies";
+import type { InterviewState, MethodologyId } from "@/lib/types";
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [methodology, setMethodology] = useState<MethodologyId>(DEFAULT_METHODOLOGY);
 
   async function start() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/session", { method: "POST" });
+      const res = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ methodology }),
+      });
       if (!res.ok) throw new Error("Could not start the interview");
       const state = (await res.json()) as InterviewState;
       router.push(`/interview/${state.sessionId}`);
@@ -34,6 +40,46 @@ export default function Home() {
           Draw a random card. Answer out loud — we listen. Claude plays the interviewer: it probes with real
           follow-ups, then after 5 questions delivers a full feedback report on what was strong and what to improve.
         </p>
+
+        {/* methodology chooser */}
+        <div className="mt-7 text-left">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Pick your answer framework
+          </h2>
+          <div className="grid gap-2">
+            {METHODOLOGY_LIST.map((m) => {
+              const selected = m.id === methodology;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMethodology(m.id)}
+                  aria-pressed={selected}
+                  className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
+                    selected
+                      ? "border-accent bg-accent/15 ring-1 ring-accent"
+                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                      selected ? "border-accent bg-accent text-white" : "border-white/30"
+                    }`}
+                  >
+                    {selected && <span className="text-[11px] leading-none">✓</span>}
+                  </span>
+                  <span>
+                    <span className="flex items-baseline gap-2">
+                      <span className="font-bold">{m.name}</span>
+                      <span className="text-xs text-slate-400">{m.expansion}</span>
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-400">{m.blurb}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <ul className="mx-auto mt-6 grid max-w-sm gap-2 text-left text-sm text-slate-300">
           <li>🎤 Speech-to-text — answer by talking</li>

@@ -1,4 +1,4 @@
-import type { MessageRow } from "../types";
+import type { MessageRow, MethodologyId } from "../types";
 
 export type ProviderId = "anthropic" | "gemini";
 export type SchemaKey = "analysis" | "feedback";
@@ -22,4 +22,5 @@ export interface AnalyzeParams {
   questionMessages: MessageRow[]; // card + answers + prior follow-ups for the current main question
   followupsAsked: number;
   isLastMain: boolean; // if true and we move on, the interview ends after this
+  methodology: MethodologyId; // the answer framework chosen for this session
 }

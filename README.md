@@ -16,7 +16,26 @@ feedback) is persisted to **SQLite**.
 - 🎤 **Speech-to-text** — answer by talking (Web Speech API)
 - 🔊 **Text-to-speech** — the interviewer reads questions aloud
 - 🧠 **Adaptive follow-ups** — generated from your actual answer (`claude-opus-4-8`)
+- 🧩 **Pick your answer framework** — STAR, PAR, or CARL; the interviewer and feedback adapt to it
 - 📋 **Persistent record** — every turn + feedback saved to SQLite
+
+---
+
+## Answer frameworks
+
+At the start of a session you choose how you want to structure your answers. The choice is
+stored on the session and rewrites the interviewer's system prompt **and** the final feedback
+rubric ([`src/lib/methodologies.ts`](src/lib/methodologies.ts)).
+
+| Framework | Components | Best for |
+| --- | --- | --- |
+| **STAR** | Situation · Task · Action · Result | The default — most behavioral questions. |
+| **PAR** | Problem · Action · Result | Concise, punchy answers. |
+| **CARL** | Context · Action · Result · Learning | Growth / failure / learning questions (probes reflection). |
+
+The interviewer probes for whatever component is missing or vague — e.g. in **CARL** it will
+specifically ask what you *learned* if you describe an outcome but never reflect on it. The
+feedback report then scores your answers against that same framework.
 
 ---
 
@@ -70,7 +89,7 @@ File: `data/qcard.db` (auto-created; WAL mode). Schema in
 | Table | Purpose |
 | --- | --- |
 | `questions` | The card deck (category, text, difficulty). Seeded from [`questions.ts`](src/lib/questions.ts). |
-| `sessions` | One interview: status, target main-question count, current index, timestamps. |
+| `sessions` | One interview: status, target main-question count, current index, **chosen framework** (`methodology`), timestamps. |
 | `session_questions` | The 5 cards chosen for a session, their order, status, and follow-ups asked. |
 | `messages` | **Full conversation log** — every interviewer line, candidate answer, and follow-up, tagged by `role` + `kind` and linked to its card. |
 | `feedbacks` | Final report per session: strengths, improvements, expectations, overall, rating. |
@@ -146,6 +165,7 @@ src/
       anthropic.ts            Anthropic (Claude) provider
       gemini.ts               Google Gemini provider
       types.ts                JsonLLM provider interface
+    methodologies.ts          STAR / PAR / CARL frameworks + prompt guidance
     questions.ts              card bank
     state.ts                  build client state from DB
     types.ts                  shared types

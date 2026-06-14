@@ -2,6 +2,9 @@
 
 export type SessionStatus = "in_progress" | "completed";
 
+// Answer framework the candidate picks at the start of a session.
+export type MethodologyId = "star" | "par" | "carl";
+
 export type MessageRole = "interviewer" | "candidate" | "system";
 
 // What a logged message represents in the interview flow.
@@ -26,6 +29,7 @@ export interface SessionRow {
   status: SessionStatus;
   main_question_count: number;
   current_main_index: number;
+  methodology: MethodologyId;
 }
 
 export interface SessionQuestionRow {
@@ -88,6 +92,7 @@ export interface InterviewState {
   currentMainIndex: number; // 0-based; equals count when finished
   awaiting: "answer" | "feedback" | "done";
   provider: { id: "anthropic" | "gemini"; model: string; enabled: boolean };
+  methodology: { id: MethodologyId; name: string; expansion: string; steps: string[] };
   transcript: Turn[];
   currentQuestion: {
     position: number;
