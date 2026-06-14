@@ -1,4 +1,5 @@
 import { getActiveSessionQuestion, getFeedback, getMessages, getQuestion, getSession } from "./db";
+import { getLevel } from "./levels";
 import { activeProvider } from "./llm";
 import { getMethodology } from "./methodologies";
 import type { InterviewState, Turn } from "./types";
@@ -34,6 +35,7 @@ export function buildInterviewState(sessionId: string): InterviewState | null {
   else awaiting = "answer";
 
   const m = getMethodology(session.methodology);
+  const lvl = getLevel(session.level);
 
   return {
     sessionId,
@@ -43,6 +45,7 @@ export function buildInterviewState(sessionId: string): InterviewState | null {
     awaiting,
     provider: activeProvider(),
     methodology: { id: m.id, name: m.name, expansion: m.expansion, steps: m.steps.map((s) => s.name) },
+    level: { id: lvl.id, name: lvl.name, scopeBlurb: lvl.scopeBlurb },
     transcript,
     currentQuestion,
     feedback,

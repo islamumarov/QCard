@@ -2,11 +2,13 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { DEFAULT_LEVEL, getLevel, numericLevel } from "./levels";
 import { DEFAULT_METHODOLOGY, getMethodology } from "./methodologies";
-import { QUESTION_BANK } from "./questions";
+import { QUESTION_BANK, levelBand } from "./questions";
 import type {
   Feedback,
   FeedbackRow,
+  LevelId,
   MessageKind,
   MethodologyId,
   MessageRole,
@@ -16,7 +18,10 @@ import type {
   SessionRow,
 } from "./types";
 
-export const MAIN_QUESTIONS = Number(process.env.QCARD_MAIN_QUESTIONS || 5);
+// Positive integer; a non-numeric or junk override falls back to 5 rather than
+// poisoning question selection with NaN.
+const mainQuestionsRaw = Number(process.env.QCARD_MAIN_QUESTIONS);
+export const MAIN_QUESTIONS = Number.isFinite(mainQuestionsRaw) && mainQuestionsRaw > 0 ? Math.floor(mainQuestionsRaw) : 5;
 
 // Walk up from `start` until a directory containing package.json — the project
 // root — regardless of the current working directory the server was launched from.
@@ -127,7 +132,9 @@ function migrate(db: Database.Database) {
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       category   TEXT NOT NULL,
       text       TEXT NOT NULL UNIQUE,
-      difficulty TEXT NOT NULL DEFAULT 'medium'
+      difficulty TEXT NOT NULL DEFAULT 'medium',
+      level_min  INTEGER NOT NULL DEFAULT 3,
+      level_max  INTEGER NOT NULL DEFAULT 7
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
@@ -137,7 +144,8 @@ function migrate(db: Database.Database) {
       status              TEXT NOT NULL DEFAULT 'in_progress',
       main_question_count INTEGER NOT NULL,
       current_main_index  INTEGER NOT NULL DEFAULT 0,
-      methodology         TEXT NOT NULL DEFAULT 'star'
+      methodology         TEXT NOT NULL DEFAULT 'star',
+      level               TEXT NOT NULL DEFAULT 'L4'
     );
 
     CREATE TABLE IF NOT EXISTS session_questions (
@@ -176,6 +184,9 @@ function migrate(db: Database.Database) {
 
   // Additive migrations for databases created before a column existed.
   ensureColumn(db, "sessions", "methodology", "TEXT NOT NULL DEFAULT 'star'");
+  ensureColumn(db, "questions", "level_min", "INTEGER NOT NULL DEFAULT 3");
+  ensureColumn(db, "questions", "level_max", "INTEGER NOT NULL DEFAULT 7");
+  ensureColumn(db, "sessions", "level", "TEXT NOT NULL DEFAULT 'L4'");
 }
 
 // Add a column to an existing table if it isn't already present.
@@ -187,11 +198,27 @@ function ensureColumn(db: Database.Database, table: string, column: string, ddl:
 }
 
 function seedQuestions(db: Database.Database) {
-  const count = (db.prepare("SELECT COUNT(*) AS n FROM questions").get() as { n: number }).n;
-  if (count > 0) return;
-  const insert = db.prepare("INSERT OR IGNORE INTO questions (category, text, difficulty) VALUES (?, ?, ?)");
+  const insert = db.prepare(
+    "INSERT OR IGNORE INTO questions (category, text, difficulty, level_min, level_max) VALUES (?, ?, ?, ?, ?)",
+  );
+  const setBand = db.prepare("UPDATE questions SET level_min = ?, level_max = ? WHERE text = ?");
+
+  // One-time bank top-up + band backfill, guarded by a version flag so it
+  // doesn't run on every boot. Bump SEED_VERSION when the bank changes.
+  const SEED_VERSION = 2;
+  db.exec("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)");
+  const seenRow = db.prepare("SELECT value FROM meta WHERE key = 'seed_version'").get() as
+    | { value: string }
+    | undefined;
+  if (seenRow && Number(seenRow.value) >= SEED_VERSION) return;
+
   const tx = db.transaction(() => {
-    for (const q of QUESTION_BANK) insert.run(q.category, q.text, q.difficulty);
+    for (const q of QUESTION_BANK) {
+      const { levelMin, levelMax } = levelBand(q.levels);
+      insert.run(q.category, q.text, q.difficulty, levelMin, levelMax); // adds new cards
+      setBand.run(levelMin, levelMax, q.text); // fixes bands on legacy rows
+    }
+    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('seed_version', ?)").run(String(SEED_VERSION));
   });
   tx();
 }
@@ -200,47 +227,80 @@ const now = () => new Date().toISOString();
 
 // ---- Session lifecycle ---------------------------------------------------
 
-// Pick N distinct questions, preferring one per category for variety.
+// Back-compat wrapper: pick N questions at the default level.
 function pickQuestions(db: Database.Database, n: number): Question[] {
+  return pickQuestionsForLevel(db, n, numericLevel(DEFAULT_LEVEL));
+}
+
+// Pick N questions suited to a target SWE level (3..7).
+// Band-contains is the primary filter; slack widens it when too few match;
+// fit-score keeps cards centered near the level on top; categories add variety.
+export function pickQuestionsForLevel(db: Database.Database, n: number, level: number): Question[] {
   const all = db.prepare("SELECT * FROM questions").all() as Question[];
+  const shuffle = <T,>(a: T[]) =>
+    a.map((v) => [Math.random(), v] as const).sort((x, y) => x[0] - y[0]).map((p) => p[1]);
+
+  const contains = (q: Question, slack: number) => q.level_min - slack <= level && level <= q.level_max + slack;
+
+  // 1. Strict band membership; 2. widen by 1 in both directions until the pool
+  //    is comfortably large (>= n*2), or we run out of slack. Never empty.
+  let pool = all.filter((q) => contains(q, 0));
+  for (const slack of [1, 2, 3, 4]) {
+    if (pool.length >= Math.max(n, n * 2)) break;
+    pool = all.filter((q) => contains(q, slack));
+  }
+  if (pool.length === 0) pool = all; // ultimate fallback
+
+  // 3. Fit: smaller is better — distance of the target from the band center,
+  //    plus a penalty for bands that don't actually contain the target.
+  const fit = (q: Question) => {
+    const center = (q.level_min + q.level_max) / 2;
+    const miss = q.level_min <= level && level <= q.level_max ? 0 : 1;
+    return Math.abs(center - level) + miss * 2;
+  };
+
+  // 4. Category variety over the POOL; within a category prefer best fit
+  //    (ties broken randomly).
   const byCat = new Map<string, Question[]>();
-  for (const q of all) {
+  for (const q of pool) {
     const arr = byCat.get(q.category) ?? [];
     arr.push(q);
     byCat.set(q.category, arr);
   }
-  const shuffle = <T,>(a: T[]) => a.map((v) => [Math.random(), v] as const).sort((x, y) => x[0] - y[0]).map((p) => p[1]);
-
   const picked: Question[] = [];
-  const cats = shuffle([...byCat.keys()]);
-  // one from each category first
-  for (const c of cats) {
+  for (const c of shuffle([...byCat.keys()])) {
     if (picked.length >= n) break;
-    picked.push(shuffle(byCat.get(c)!)[0]);
+    const best = byCat.get(c)!.sort((a, b) => fit(a) - fit(b) || Math.random() - 0.5)[0];
+    picked.push(best);
   }
-  // top up if we need more than there are categories
+
+  // 5. Top up across the whole pool by best fit if categories < n.
   if (picked.length < n) {
     const used = new Set(picked.map((q) => q.id));
-    for (const q of shuffle(all)) {
+    const rest = pool.filter((q) => !used.has(q.id)).sort((a, b) => fit(a) - fit(b) || Math.random() - 0.5);
+    for (const q of rest) {
       if (picked.length >= n) break;
-      if (!used.has(q.id)) {
-        picked.push(q);
-        used.add(q.id);
-      }
+      picked.push(q);
+      used.add(q.id);
     }
   }
+
+  // 6. Shuffle final order so difficulty/level isn't telegraphed by position.
   return shuffle(picked).slice(0, n);
 }
 
-export function createSession(methodology: MethodologyId = DEFAULT_METHODOLOGY): SessionRow {
+export function createSession(
+  methodology: MethodologyId = DEFAULT_METHODOLOGY,
+  level: LevelId = DEFAULT_LEVEL,
+): SessionRow {
   const db = getDb();
   const id = randomUUID();
-  const questions = pickQuestions(db, MAIN_QUESTIONS);
+  const questions = pickQuestionsForLevel(db, MAIN_QUESTIONS, numericLevel(level));
 
   const tx = db.transaction(() => {
     db.prepare(
-      "INSERT INTO sessions (id, created_at, status, main_question_count, current_main_index, methodology) VALUES (?, ?, 'in_progress', ?, 0, ?)",
-    ).run(id, now(), MAIN_QUESTIONS, methodology);
+      "INSERT INTO sessions (id, created_at, status, main_question_count, current_main_index, methodology, level) VALUES (?, ?, 'in_progress', ?, 0, ?, ?)",
+    ).run(id, now(), MAIN_QUESTIONS, methodology, level);
 
     const insertSQ = db.prepare(
       "INSERT INTO session_questions (session_id, question_id, position, status) VALUES (?, ?, ?, ?)",
@@ -249,8 +309,8 @@ export function createSession(methodology: MethodologyId = DEFAULT_METHODOLOGY):
   });
   tx();
 
-  // Intro (mentions the chosen framework) + first card as opening interviewer messages.
-  addMessage(id, null, "interviewer", "intro", introText(methodology));
+  // Intro (mentions the chosen framework + target level) + first card.
+  addMessage(id, null, "interviewer", "intro", introText(methodology, level));
   const firstSQ = getSessionQuestionByPosition(id, 0)!;
   const firstQ = getQuestion(firstSQ.question_id)!;
   addMessage(id, firstSQ.id, "interviewer", "main", firstQ.text);
@@ -258,10 +318,12 @@ export function createSession(methodology: MethodologyId = DEFAULT_METHODOLOGY):
   return getSession(id)!;
 }
 
-function introText(methodologyId: MethodologyId): string {
+function introText(methodologyId: MethodologyId, levelId: LevelId): string {
   const m = getMethodology(methodologyId);
+  const lvl = getLevel(levelId);
   return (
-    `Welcome — thanks for making the time. I'll ask you ${MAIN_QUESTIONS} behavioral questions. ` +
+    `Welcome — thanks for making the time. I'll ask you ${MAIN_QUESTIONS} behavioral questions, ` +
+    `calibrated to the ${lvl.name} bar (${lvl.scopeBlurb}). ` +
     `Please structure each answer with the ${m.name} method — ${m.expansion} — and answer as if this were a real interview. Let's begin.`
   );
 }

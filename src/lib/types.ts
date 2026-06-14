@@ -5,6 +5,9 @@ export type SessionStatus = "in_progress" | "completed";
 // Answer framework the candidate picks at the start of a session.
 export type MethodologyId = "star" | "par" | "carl";
 
+// SWE level the candidate targets at the start of a session (the bar).
+export type LevelId = "L3" | "L4" | "L5" | "L6" | "L7";
+
 export type MessageRole = "interviewer" | "candidate" | "system";
 
 // What a logged message represents in the interview flow.
@@ -20,6 +23,8 @@ export interface Question {
   category: string;
   text: string;
   difficulty: "easy" | "medium" | "hard";
+  level_min: number; // 3..7 inclusive band — lowest SWE level this card suits
+  level_max: number; // 3..7 inclusive band — highest SWE level this card suits
 }
 
 export interface SessionRow {
@@ -30,6 +35,7 @@ export interface SessionRow {
   main_question_count: number;
   current_main_index: number;
   methodology: MethodologyId;
+  level: LevelId;
 }
 
 export interface SessionQuestionRow {
@@ -93,6 +99,7 @@ export interface InterviewState {
   awaiting: "answer" | "feedback" | "done";
   provider: { id: "anthropic" | "gemini"; model: string; enabled: boolean };
   methodology: { id: MethodologyId; name: string; expansion: string; steps: string[] };
+  level: { id: LevelId; name: string; scopeBlurb: string };
   transcript: Turn[];
   currentQuestion: {
     position: number;

@@ -141,8 +141,11 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* framework + active provider */}
+      {/* level + framework + active provider */}
       <div className="flex flex-wrap items-center justify-end gap-2">
+        <span className="chip border-accent/30 bg-accent/10" title={state.level.scopeBlurb}>
+          🎯 {state.level.name}
+        </span>
         <span
           className="chip border-accent2/30 bg-accent2/10"
           title={`Answering with the ${state.methodology.name} framework: ${state.methodology.expansion}`}

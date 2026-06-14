@@ -1,4 +1,4 @@
-import type { MessageRow, MethodologyId } from "../types";
+import type { LevelId, MessageRow, MethodologyId } from "../types";
 
 export type ProviderId = "anthropic" | "gemini";
 export type SchemaKey = "analysis" | "feedback";
@@ -23,4 +23,5 @@ export interface AnalyzeParams {
   followupsAsked: number;
   isLastMain: boolean; // if true and we move on, the interview ends after this
   methodology: MethodologyId; // the answer framework chosen for this session
+  level: LevelId; // the target SWE level (the bar)
 }

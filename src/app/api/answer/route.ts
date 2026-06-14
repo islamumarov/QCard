@@ -42,6 +42,7 @@ export async function POST(req: Request) {
       followupsAsked: activeSQ.followups_asked,
       isLastMain,
       methodology: session.methodology,
+      level: session.level,
     });
 
     if (analysis.action === "followup") {

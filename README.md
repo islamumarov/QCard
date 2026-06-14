@@ -17,6 +17,7 @@ feedback) is persisted to **SQLite**.
 - 🔊 **Text-to-speech** — the interviewer reads questions aloud
 - 🧠 **Adaptive follow-ups** — generated from your actual answer (`claude-opus-4-8`)
 - 🧩 **Pick your answer framework** — STAR, PAR, or CARL; the interviewer and feedback adapt to it
+- 🎯 **Pick your target SWE level** — Google L3–L7; questions and the grading bar calibrate to it
 - 📋 **Persistent record** — every turn + feedback saved to SQLite
 
 ---
@@ -36,6 +37,33 @@ rubric ([`src/lib/methodologies.ts`](src/lib/methodologies.ts)).
 The interviewer probes for whatever component is missing or vague — e.g. in **CARL** it will
 specifically ask what you *learned* if you describe an outcome but never reflect on it. The
 feedback report then scores your answers against that same framework.
+
+---
+
+## Target SWE level
+
+You also choose a **target Google SWE level** at the start. Where the framework sets the
+**structure** of an answer, the level sets the **bar** it's judged against
+([`src/lib/levels.ts`](src/lib/levels.ts)). The level affects two things:
+
+1. **Question selection** — cards are tagged with a level band; the deck is drawn to suit your
+   target (junior cards for L3, scope/strategy cards for L6–L7), widening gracefully if a band
+   is sparse.
+2. **Grading bar** — the interviewer's probing and the final feedback are calibrated to that
+   level's behavioral expectations (scope, ambiguity, ownership, influence). The 1–10 rating is
+   anchored to the chosen level, so a 7/10 at L6 ≠ a 7/10 at L3.
+
+| Level | Title | Bar (behavioral) |
+| --- | --- | --- |
+| **L3** | SWE II | Reliable execution & ownership of well-scoped tasks. |
+| **L4** *(default)* | SWE III | Independent feature/component ownership. |
+| **L5** | Senior | Team-level ownership; influence without authority. |
+| **L6** | Staff | Sustained multi-team / org-radius direction-setting. |
+| **L7** | Senior Staff | Multi-org technical direction, as a sustained pattern. |
+
+The level bars are grounded in researched, cross-checked Google leveling rubrics. Example:
+answer an L6 session with a single-team story and the interviewer will push you on the
+cross-team / org-level radius — the L6 distinctive signal.
 
 ---
 
@@ -88,8 +116,8 @@ File: `data/qcard.db` (auto-created; WAL mode). Schema in
 
 | Table | Purpose |
 | --- | --- |
-| `questions` | The card deck (category, text, difficulty). Seeded from [`questions.ts`](src/lib/questions.ts). |
-| `sessions` | One interview: status, target main-question count, current index, **chosen framework** (`methodology`), timestamps. |
+| `questions` | The card deck (category, text, difficulty, `level_min`/`level_max` band). Seeded from [`questions.ts`](src/lib/questions.ts). |
+| `sessions` | One interview: status, target main-question count, current index, **chosen framework** (`methodology`), **target level** (`level`), timestamps. |
 | `session_questions` | The 5 cards chosen for a session, their order, status, and follow-ups asked. |
 | `messages` | **Full conversation log** — every interviewer line, candidate answer, and follow-up, tagged by `role` + `kind` and linked to its card. |
 | `feedbacks` | Final report per session: strengths, improvements, expectations, overall, rating. |
@@ -166,7 +194,8 @@ src/
       gemini.ts               Google Gemini provider
       types.ts                JsonLLM provider interface
     methodologies.ts          STAR / PAR / CARL frameworks + prompt guidance
-    questions.ts              card bank
+    levels.ts                 Google L3–L7 bars + interviewer/feedback calibration
+    questions.ts              card bank (level-banded)
     state.ts                  build client state from DB
     types.ts                  shared types
 ```

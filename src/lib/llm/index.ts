@@ -1,8 +1,9 @@
 // LLM facade: selects the configured provider (Anthropic or Gemini) and exposes
 // the two interview operations. Prompt building, the follow-up cap, fallbacks,
 // and result normalization live here so they are identical across providers.
+import { getLevel } from "../levels";
 import { getMethodology } from "../methodologies";
-import type { AnswerAnalysis, Feedback, MessageRow, MethodologyId } from "../types";
+import type { AnswerAnalysis, Feedback, LevelId, MessageRow, MethodologyId } from "../types";
 import { createAnthropicProvider } from "./anthropic";
 import { createGeminiProvider } from "./gemini";
 import {
@@ -49,7 +50,7 @@ export const llmEnabled = (): boolean => getProvider().enabled;
 
 // ---- analyze a candidate answer -> follow-up or move on ----
 
-export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMain, methodology }: AnalyzeParams): Promise<AnswerAnalysis> {
+export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMain, methodology, level }: AnalyzeParams): Promise<AnswerAnalysis> {
   const provider = getProvider();
   const reachedLimit = followupsAsked >= MAX_FOLLOWUPS;
 
@@ -68,7 +69,7 @@ export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMa
 
   try {
     const parsed = (await provider.generateJSON({
-      system: interviewerSystem(getMethodology(methodology)),
+      system: interviewerSystem(getMethodology(methodology), getLevel(level)),
       user,
       schema: "analysis",
       maxTokens: 2048,
@@ -86,17 +87,22 @@ export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMa
 
 // ---- final feedback over the whole interview ----
 
-export async function generateFeedback(allMessages: MessageRow[], methodology: MethodologyId): Promise<Feedback> {
+export async function generateFeedback(
+  allMessages: MessageRow[],
+  methodology: MethodologyId,
+  level: LevelId,
+): Promise<Feedback> {
   const provider = getProvider();
   const m = getMethodology(methodology);
+  const lvl = getLevel(level);
   const providerName = provider.id === "gemini" ? "GEMINI" : "ANTHROPIC";
-  if (!provider.enabled) return fallbackFeedback(providerName, m);
+  if (!provider.enabled) return fallbackFeedback(providerName, m, lvl);
 
   const transcript = renderFullTranscript(allMessages);
 
   try {
     const parsed = (await provider.generateJSON({
-      system: feedbackSystem(m),
+      system: feedbackSystem(m, lvl),
       user: `Full interview transcript:\n\n${transcript}\n\nProduce the structured feedback.`,
       schema: "feedback",
       maxTokens: 3072,
@@ -107,6 +113,6 @@ export async function generateFeedback(allMessages: MessageRow[], methodology: M
     return parsed;
   } catch (err) {
     console.error(`[${provider.id}] generateFeedback failed`, err);
-    return fallbackFeedback(providerName, m);
+    return fallbackFeedback(providerName, m, lvl);
   }
 }

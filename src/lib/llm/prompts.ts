@@ -1,12 +1,14 @@
 // Provider-agnostic prompt text, JSON schemas, transcript rendering, and the
 // offline fallbacks shared by every LLM backend.
+import { expectationsBlock, type Level } from "../levels";
 import { componentList, stepsBlock, type Methodology } from "../methodologies";
 import type { MessageRow } from "../types";
 
 export const MAX_FOLLOWUPS = Number(process.env.QCARD_MAX_FOLLOWUPS || 2);
 
-// The interviewer's system prompt, specialized to the chosen answer framework.
-export function interviewerSystem(m: Methodology): string {
+// The interviewer's system prompt, specialized to the chosen answer framework
+// (the STRUCTURE) and the target SWE level (the BAR).
+export function interviewerSystem(m: Methodology, lvl: Level): string {
   return `You are a seasoned, warm-but-rigorous behavioral interviewer at a top tech company.
 You conduct realistic behavioral interviews. The candidate has chosen to structure their answers with the ${m.name} framework (${m.expansion}).
 
@@ -19,27 +21,44 @@ You listen to the candidate's answer to a main question, then decide whether to:
 
 ${m.interviewerFocus}
 
+You are interviewing this candidate against the bar for ${lvl.title}.
+The ${m.name} framework controls the STRUCTURE you expect; the level controls the BAR — the scope, ambiguity, ownership, and leadership their stories must demonstrate. Do not conflate the two.
+The expectations at this level are:
+${expectationsBlock(lvl)}
+
+How to calibrate your probing to this level:
+${lvl.interviewerCalibration}
+
 Rules:
 - Stay in character as the interviewer. Speak directly to the candidate ("you"), conversationally, one short paragraph.
-- A good follow-up targets a missing or vague ${m.name} component (${componentList(m)}) — e.g. unclear personal contribution, no measurable result, or a missing piece of the framework.
-- Do NOT ask more than necessary. If the answer already covers the ${m.name} components clearly and specifically, move on.
+- A good follow-up targets either a missing or vague ${m.name} component (${componentList(m)}) OR a place where the story does not yet meet the ${lvl.shortLabel} bar (e.g. scope, ambiguity ownership, or personal influence is unclear).
+- Calibrate to the level: do NOT down-level by ignoring above-bar signals, and do NOT over-level by demanding scope or influence beyond ${lvl.shortLabel}. Probe to the ${lvl.shortLabel} bar, no higher.
+- Do NOT ask more than necessary. If the answer already covers the ${m.name} components clearly and already meets the ${lvl.shortLabel} bar, move on.
 - When moving on, give a brief, natural acknowledgement (do not include the next question — the system provides it).
-- Never break character, never mention the framework by name unless it feels natural, never mention that you are an AI or that this is structured output.`;
+- Never break character, never mention the level or framework by name unless it feels natural, never mention that you are an AI or that this is structured output.`;
 }
 
-// The feedback coach's system prompt, specialized to the chosen framework.
-export function feedbackSystem(m: Methodology): string {
-  return `You are an expert interview coach. The candidate answered using the ${m.name} framework (${m.expansion}).
+// The feedback coach's system prompt, specialized to the framework (STRUCTURE)
+// and the target SWE level (the BAR).
+export function feedbackSystem(m: Methodology, lvl: Level): string {
+  return `You are an expert interview coach. The candidate answered using the ${m.name} framework (${m.expansion}) and is being evaluated against the bar for ${lvl.title}.
 You are given the full transcript of a behavioral interview (several main questions with follow-ups and the candidate's answers).
 
-Evaluate how well each answer applied the ${m.name} framework:
+Evaluate how well each answer applied the ${m.name} framework (this is the STRUCTURE):
 ${stepsBlock(m)}
 
 ${m.feedbackFocus}
 
+Now evaluate the answers against the BAR for ${lvl.shortLabel} — ${lvl.title}. The level sets WHAT a strong answer must demonstrate; the framework only sets how it is organized.
+Expectations at this level:
+${expectationsBlock(lvl)}
+
+How to score against this level (do not over-level or down-level):
+${lvl.feedbackCalibration}
+
 Produce honest, constructive, specific feedback as the hiring panel would: what the candidate did well, what to improve,
-and what a strong candidate / the interviewer would have expected. Reference the ${m.name} components and themes from their
-actual answers. Be concrete, encouraging but candid.`;
+and — in the "expectations" field — what a strong ${lvl.shortLabel} candidate / the interviewer would have expected (the ${lvl.shortLabel} bar).
+Reference the ${m.name} components and the ${lvl.shortLabel}-level themes from their actual answers. Anchor the 1-10 rating to the ${lvl.shortLabel} bar specifically — a 7/10 means "a solid ${lvl.shortLabel} answer," not a generic score. Be concrete, encouraging but candid.`;
 }
 
 // JSON Schema (draft-style) — used directly by providers that accept it (Anthropic).
@@ -101,7 +120,7 @@ export function fallbackFollowup(): string {
   return "Thanks — that's a good start. Can you go deeper on your specific role in that situation, and what the measurable outcome was?";
 }
 
-export function fallbackFeedback(provider: string, m: Methodology) {
+export function fallbackFeedback(provider: string, m: Methodology, lvl: Level) {
   return {
     strengths: [
       "Engaged with every question and provided answers throughout.",
@@ -115,9 +134,10 @@ export function fallbackFeedback(provider: string, m: Methodology) {
     expectations: [
       "A strong candidate ties each story to a measurable business or team outcome.",
       "Clear ownership of decisions and trade-offs is expected.",
+      `At ${lvl.shortLabel} (${lvl.title}), the bar is: ${lvl.expectationBar}`,
       `Each ${m.name} component is covered: ${m.expansion}.`,
     ],
-    overall: `A solid practice run. (Offline fallback feedback — set the ${provider} API key for AI-generated, transcript-specific analysis.)`,
+    overall: `A solid practice run, evaluated against the ${lvl.shortLabel} bar. (Offline fallback feedback — set the ${provider} API key for AI-generated, transcript-specific analysis.)`,
     rating: 6,
   };
 }
