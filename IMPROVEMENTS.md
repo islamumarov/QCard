@@ -5,6 +5,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Interview history view** — `/history` server page lists the signed-in user's past
+  sessions (newest first) via `getSessionsForUser`, each row showing level, framework,
+  status, date, and a color-tinted score badge (from `getFeedback`); rows link to
+  `/interview/{id}` to resume/review. Gracefully degrades: explains itself when auth is
+  unconfigured or nobody is signed in. A **History** chip appears in the header only when
+  signed in. _(iteration 4)_
 - **Link sessions to the signed-in user** — `sessions.user_id` (nullable, additive
   migration) is stamped on create from `(await auth())?.user?.email` in the session
   route, but only when `authConfigured` — anonymous (`null`) otherwise, mirroring the
@@ -24,11 +30,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Interview history view** — `/history` page listing past sessions (level, framework,
-   rating, date) reading from SQLite via `getSessionsForUser`; resume/review a past
-   transcript + feedback. Now unblocked — `user_id` + getter are wired.
-2. **Export a session** — download transcript + feedback as Markdown/JSON from the
+1. **Export a session** — download transcript + feedback as Markdown/JSON from the
    feedback screen.
+2. **Delete a session** — let a signed-in user remove a past interview from `/history`
+   (server action + `ON DELETE CASCADE` already covers child rows).
 
 ## Backlog (ideas)
 
