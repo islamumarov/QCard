@@ -5,6 +5,13 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Google OAuth sign-in (Auth.js / NextAuth v5)** — added `next-auth@5` with a
+  Google provider that is gracefully optional: `authConfigured` (in `src/auth.ts`)
+  is true only when `GOOGLE_CLIENT_ID`/`SECRET` are set, mirroring the LLM-key
+  `enabled` pattern. Server-component `AuthButton` in the header shows Sign in /
+  Sign out (no client `SessionProvider` needed); catch-all route at
+  `/api/auth/[...nextauth]`; env example documents `AUTH_SECRET`. When unconfigured
+  the UI hides auth entirely and `/` stays statically prerendered. _(iteration 2)_
 - **a11y/UX: screen-reader transcript + keyboard submit** — transcript is now a
   `role="log"` `aria-live="polite"` region so new interviewer lines are announced; the
   answer box has `aria-label` + `aria-keyshortcuts` and submits on **Cmd/Ctrl+Enter**
@@ -12,14 +19,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Google OAuth sign-in (Auth.js / NextAuth v5)** — optional, graceful when
-   `GOOGLE_CLIENT_ID`/`SECRET` absent (mirrors the LLM-key fallback pattern). Sign-in/out
-   in the header, `SessionProvider`, `AUTH_SECRET`. Big enough for its own iteration.
-2. **Link sessions to the signed-in user** — add `sessions.user_id` (nullable), record it
-   on create, scope future history to the user. Depends on #1.
-3. **Interview history view** — `/history` page listing past sessions (level, framework,
+1. **Link sessions to the signed-in user** — add `sessions.user_id` (nullable), record it
+   on create (read `await auth()` in the session route), scope future history to the user.
+   Now unblocked — Auth.js is wired.
+2. **Interview history view** — `/history` page listing past sessions (level, framework,
    rating, date) reading from SQLite; resume/review a past transcript + feedback.
-4. **Export a session** — download transcript + feedback as Markdown/JSON from the
+3. **Export a session** — download transcript + feedback as Markdown/JSON from the
    feedback screen.
 
 ## Backlog (ideas)
