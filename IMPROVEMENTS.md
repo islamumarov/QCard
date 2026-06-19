@@ -5,6 +5,16 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Export from history** — each `/history` row now offers **MD** and **JSON**
+  download links next to its delete button. A new route handler
+  `GET /api/session/:id/export?format=md|json` reuses the same pure builders as
+  the live feedback screen (`buildMarkdown`/`buildJSON`/`exportFilename`) but
+  server-side: it rebuilds state via `buildInterviewState(id)` and streams the
+  file with a `Content-Disposition: attachment` header (so a plain `<a download>`
+  works, no client `Blob`). Ownership is enforced when auth is configured — the
+  caller must be signed in and own the session (matches `getSession(id).user_id`),
+  returning 404 otherwise; when auth is unconfigured the route stays open like
+  `GET /api/session/:id`. _(iteration 7)_
 - **Delete a session** — signed-in users can remove a past interview from `/history`.
   A per-row `DeleteSessionButton` (client, `confirm()` guard) posts the id to the
   `deleteSessionAction` server action, which is a no-op unless auth is configured and
@@ -44,12 +54,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Export from history** — reuse `src/lib/export.ts` to offer the same MD/JSON
-   download on each `/history` row (or a per-session review page), not only the
-   live feedback screen. (Needs a server-side `buildInterviewState`-backed export,
-   since `/history` has no live `InterviewState`.)
-2. **Loading skeletons** — replace plain "Loading…" with skeleton cards on the
+1. **Loading skeletons** — replace plain "Loading…" with skeleton cards on the
    interview + history views for a calmer perceived load.
+2. **Per-session review page** — a read-only `/interview/{id}` already resumes;
+   consider a dedicated printable summary view that embeds the export inline.
 
 ## Backlog (ideas)
 

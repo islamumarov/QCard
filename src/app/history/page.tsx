@@ -122,7 +122,27 @@ export default async function HistoryPage() {
                   </span>
                 )}
               </Link>
-              <div className="flex items-center">
+              <div className="flex flex-col items-stretch justify-center gap-1">
+                <div className="flex gap-1">
+                  <a
+                    href={`/api/session/${s.id}/export?format=md`}
+                    download
+                    className="chip text-xs hover:bg-white/10"
+                    title="Download as Markdown"
+                    aria-label={`Download ${level.shortLabel} ${methodology.name} interview as Markdown`}
+                  >
+                    MD
+                  </a>
+                  <a
+                    href={`/api/session/${s.id}/export?format=json`}
+                    download
+                    className="chip text-xs hover:bg-white/10"
+                    title="Download as JSON"
+                    aria-label={`Download ${level.shortLabel} ${methodology.name} interview as JSON`}
+                  >
+                    JSON
+                  </a>
+                </div>
                 <DeleteSessionButton id={s.id} label={`${level.shortLabel} · ${methodology.name}`} />
               </div>
             </li>
