@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_LEVEL, LEVEL_LIST } from "@/lib/levels";
 import { DEFAULT_METHODOLOGY, METHODOLOGY_LIST } from "@/lib/methodologies";
 import type { InterviewState, LevelId, MethodologyId } from "@/lib/types";
@@ -12,6 +12,19 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [methodology, setMethodology] = useState<MethodologyId>(DEFAULT_METHODOLOGY);
   const [level, setLevel] = useState<LevelId>(DEFAULT_LEVEL);
+  // null = still checking; the Start button stays disabled until we confirm a key is set.
+  const [llmReady, setLlmReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/provider")
+      .then((r) => (r.ok ? r.json() : { enabled: false }))
+      .then((d) => alive && setLlmReady(Boolean(d?.enabled)))
+      .catch(() => alive && setLlmReady(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function start() {
     setLoading(true);
@@ -22,7 +35,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ methodology, level }),
       });
-      if (!res.ok) throw new Error("Could not start the interview");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Could not start the interview");
+      }
       const state = (await res.json()) as InterviewState;
       router.push(`/interview/${state.sessionId}`);
     } catch (e) {
@@ -125,8 +141,24 @@ export default function Home() {
           <li>📋 Saved transcript + scored feedback at the end</li>
         </ul>
 
-        <button className="btn-primary mt-8 w-full text-base" onClick={start} disabled={loading}>
-          {loading ? "Dealing your cards…" : "Start interview"}
+        {llmReady === false && (
+          <div
+            role="alert"
+            className="mt-6 rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 text-left text-sm text-amber-200"
+          >
+            No LLM API key is configured, so interviews are disabled. Set{" "}
+            <code className="rounded bg-black/30 px-1">ANTHROPIC_API_KEY</code> or{" "}
+            <code className="rounded bg-black/30 px-1">GEMINI_API_KEY</code> in your{" "}
+            <code className="rounded bg-black/30 px-1">.env</code> file, then reload.
+          </div>
+        )}
+
+        <button
+          className="btn-primary mt-8 w-full text-base"
+          onClick={start}
+          disabled={loading || llmReady !== true}
+        >
+          {loading ? "Dealing your cards…" : llmReady === null ? "Checking setup…" : "Start interview"}
         </button>
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
       </div>

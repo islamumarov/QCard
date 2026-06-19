@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth, authConfigured } from "@/auth";
 import { createSession } from "@/lib/db";
 import { DEFAULT_LEVEL, isLevelId } from "@/lib/levels";
+import { llmEnabled } from "@/lib/llm";
 import { DEFAULT_METHODOLOGY, isMethodologyId } from "@/lib/methodologies";
 import { buildInterviewState } from "@/lib/state";
 
@@ -10,6 +11,16 @@ export const dynamic = "force-dynamic";
 
 // POST /api/session  { methodology?, level? } — start a new interview, returns the initial state.
 export async function POST(req: Request) {
+  // Hard gate: refuse to start an interview unless an LLM API key is configured.
+  // Without one the whole session would run on canned fallbacks — not a real
+  // interview — so block here instead of silently degrading.
+  if (!llmEnabled()) {
+    return NextResponse.json(
+      { error: "No LLM API key configured. Set ANTHROPIC_API_KEY or GEMINI_API_KEY in .env." },
+      { status: 503 },
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const methodology = isMethodologyId(body?.methodology) ? body.methodology : DEFAULT_METHODOLOGY;
