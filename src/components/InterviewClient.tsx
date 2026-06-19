@@ -218,7 +218,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
 
       {/* composer / feedback */}
       {finished && state.feedback ? (
-        <FeedbackReport feedback={state.feedback} />
+        <FeedbackReport feedback={state.feedback} state={state} />
       ) : generatingFeedback ? (
         <div className="deck-card p-6 text-center">
           <p className="animate-pulse text-slate-300">🧠 The interviewer is preparing your feedback…</p>

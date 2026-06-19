@@ -1,4 +1,5 @@
-import type { Feedback } from "@/lib/types";
+import type { Feedback, InterviewState } from "@/lib/types";
+import { buildJSON, buildMarkdown, downloadText, exportFilename } from "@/lib/export";
 
 function List({ title, items, tone }: { title: string; items: string[]; tone: "good" | "warn" | "info" }) {
   const dot = tone === "good" ? "bg-good" : tone === "warn" ? "bg-warn" : "bg-accent2";
@@ -17,7 +18,7 @@ function List({ title, items, tone }: { title: string; items: string[]; tone: "g
   );
 }
 
-export default function FeedbackReport({ feedback }: { feedback: Feedback }) {
+export default function FeedbackReport({ feedback, state }: { feedback: Feedback; state?: InterviewState }) {
   return (
     <div className="deck-card p-6">
       <div className="mb-5 flex items-center justify-between">
@@ -37,6 +38,26 @@ export default function FeedbackReport({ feedback }: { feedback: Feedback }) {
         <List title="What to improve" items={feedback.improvements} tone="warn" />
         <List title="What was expected" items={feedback.expectations} tone="info" />
       </div>
+
+      {state && (
+        <div className="mt-6">
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Export</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="btn-ghost text-sm"
+              onClick={() => downloadText(`${exportFilename(state)}.md`, "text/markdown", buildMarkdown(state))}
+            >
+              ⬇ Markdown
+            </button>
+            <button
+              className="btn-ghost text-sm"
+              onClick={() => downloadText(`${exportFilename(state)}.json`, "application/json", buildJSON(state))}
+            >
+              ⬇ JSON
+            </button>
+          </div>
+        </div>
+      )}
 
       <a href="/" className="btn-primary mt-8 w-full">
         New interview

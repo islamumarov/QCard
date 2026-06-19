@@ -5,6 +5,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Export a session** — the feedback screen now offers **Markdown** and **JSON**
+  downloads of the full transcript + feedback. Pure builders live in `src/lib/export.ts`
+  (`buildMarkdown`/`buildJSON`/`exportFilename`) with a browser-only `downloadText`
+  Blob helper; `FeedbackReport` takes an optional `state` prop and renders the two
+  buttons only when it's present (stays backward-compatible). Filenames are
+  `qcard-{level}-{framework}-{shortId}.{md,json}`. _(iteration 5)_
 - **Interview history view** — `/history` server page lists the signed-in user's past
   sessions (newest first) via `getSessionsForUser`, each row showing level, framework,
   status, date, and a color-tinted score badge (from `getFeedback`); rows link to
@@ -30,10 +36,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Export a session** — download transcript + feedback as Markdown/JSON from the
-   feedback screen.
-2. **Delete a session** — let a signed-in user remove a past interview from `/history`
+1. **Delete a session** — let a signed-in user remove a past interview from `/history`
    (server action + `ON DELETE CASCADE` already covers child rows).
+2. **Export from history** — reuse `src/lib/export.ts` to offer the same MD/JSON
+   download on each `/history` row (or a per-session review page), not only the
+   live feedback screen.
 
 ## Backlog (ideas)
 
