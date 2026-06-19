@@ -8,6 +8,7 @@ import { auth, authConfigured } from "@/auth";
 import { getFeedback, getSessionsForUser } from "@/lib/db";
 import { getLevel } from "@/lib/levels";
 import { getMethodology } from "@/lib/methodologies";
+import DeleteSessionButton from "@/components/DeleteSessionButton";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,10 +90,10 @@ export default async function HistoryPage() {
           const feedback = getFeedback(s.id);
           const completed = s.status === "completed";
           return (
-            <li key={s.id}>
+            <li key={s.id} className="flex items-stretch gap-2">
               <Link
                 href={`/interview/${s.id}`}
-                className="deck-card flex items-center gap-4 p-4 transition hover:bg-white/10"
+                className="deck-card flex flex-1 items-center gap-4 p-4 transition hover:bg-white/10"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -121,6 +122,9 @@ export default async function HistoryPage() {
                   </span>
                 )}
               </Link>
+              <div className="flex items-center">
+                <DeleteSessionButton id={s.id} label={`${level.shortLabel} · ${methodology.name}`} />
+              </div>
             </li>
           );
         })}

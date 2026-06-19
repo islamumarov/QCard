@@ -5,6 +5,14 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Delete a session** — signed-in users can remove a past interview from `/history`.
+  A per-row `DeleteSessionButton` (client, `confirm()` guard) posts the id to the
+  `deleteSessionAction` server action, which is a no-op unless auth is configured and
+  the caller is signed in. Ownership is enforced in SQL — `deleteSession(id, userId)`
+  matches on `user_id`, so a forged id can't touch another account; child rows go via
+  `ON DELETE CASCADE`. The button sits as a flex sibling of the row `Link` (valid
+  markup, no nested interactive elements); `revalidatePath('/history')` refreshes the
+  list. _(iteration 6)_
 - **Export a session** — the feedback screen now offers **Markdown** and **JSON**
   downloads of the full transcript + feedback. Pure builders live in `src/lib/export.ts`
   (`buildMarkdown`/`buildJSON`/`exportFilename`) with a browser-only `downloadText`
@@ -36,11 +44,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Delete a session** — let a signed-in user remove a past interview from `/history`
-   (server action + `ON DELETE CASCADE` already covers child rows).
-2. **Export from history** — reuse `src/lib/export.ts` to offer the same MD/JSON
+1. **Export from history** — reuse `src/lib/export.ts` to offer the same MD/JSON
    download on each `/history` row (or a per-session review page), not only the
-   live feedback screen.
+   live feedback screen. (Needs a server-side `buildInterviewState`-backed export,
+   since `/history` has no live `InterviewState`.)
+2. **Loading skeletons** — replace plain "Loading…" with skeleton cards on the
+   interview + history views for a calmer perceived load.
 
 ## Backlog (ideas)
 

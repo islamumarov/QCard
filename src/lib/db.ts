@@ -344,6 +344,17 @@ export function getSessionsForUser(userId: string): SessionRow[] {
     .all(userId) as SessionRow[];
 }
 
+// Delete a session, but only if it belongs to `userId` — the ownership guard
+// keeps one user from removing another's history. Child rows (session_questions,
+// messages, feedbacks) go via ON DELETE CASCADE (foreign_keys pragma is ON).
+// Returns true when a row was actually removed.
+export function deleteSession(id: string, userId: string): boolean {
+  const res = getDb()
+    .prepare("DELETE FROM sessions WHERE id = ? AND user_id = ?")
+    .run(id, userId);
+  return res.changes > 0;
+}
+
 export function getQuestion(id: number): Question | undefined {
   return getDb().prepare("SELECT * FROM questions WHERE id = ?").get(id) as Question | undefined;
 }
