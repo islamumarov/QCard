@@ -167,23 +167,6 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
           </span>
           {tts.supported && (
             <div className="flex items-center gap-3">
-              {tts.voices.length > 0 && (
-                <select
-                  className="max-w-[10rem] truncate rounded-lg border border-white/10 bg-ink/60 px-2 py-1 text-xs text-slate-200 outline-none focus:border-accent"
-                  value={tts.voiceURI ?? ""}
-                  onChange={(e) => {
-                    tts.setVoiceURI(e.target.value);
-                    tts.speak("Hi, I'll be your interviewer today.");
-                  }}
-                  title="Choose interviewer voice"
-                >
-                  {tts.voices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              )}
               <label className="flex cursor-pointer items-center gap-2">
                 <input type="checkbox" checked={autoSpeak} onChange={(e) => setAutoSpeak(e.target.checked)} />
                 🔊 read aloud
@@ -219,7 +202,12 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
       )}
 
       {/* transcript */}
-      <div className="deck-card max-h-[42vh] overflow-y-auto p-4">
+      <div
+        className="deck-card max-h-[42vh] overflow-y-auto p-4"
+        role="log"
+        aria-live="polite"
+        aria-label="Interview transcript"
+      >
         <div className="space-y-3">
           {state.transcript.map((t) => (
             <Bubble key={t.id} turn={t} />
@@ -243,6 +231,15 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
             placeholder={stt.listening ? "Listening… speak your answer" : "Type your answer, or tap the mic to speak…"}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => {
+              // Cmd/Ctrl+Enter submits, matching common chat UIs.
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                submitAnswer();
+              }
+            }}
+            aria-label="Your answer"
+            aria-keyshortcuts="Meta+Enter Control+Enter"
             disabled={busy}
           />
           <div className="mt-3 flex items-center justify-between gap-3">
@@ -264,9 +261,12 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
                 </button>
               )}
             </div>
-            <button className="btn-primary" onClick={submitAnswer} disabled={busy || !answer.trim()}>
-              {busy ? "Thinking…" : "Send answer"}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs text-slate-500 sm:inline">⌘/Ctrl + ↵</span>
+              <button className="btn-primary" onClick={submitAnswer} disabled={busy || !answer.trim()}>
+                {busy ? "Thinking…" : "Send answer"}
+              </button>
+            </div>
           </div>
           {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
         </div>
