@@ -29,6 +29,7 @@ export interface Question {
 
 export interface SessionRow {
   id: string;
+  user_id: string | null;
   created_at: string;
   finished_at: string | null;
   status: SessionStatus;

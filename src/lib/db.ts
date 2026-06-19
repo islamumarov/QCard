@@ -139,6 +139,7 @@ function migrate(db: Database.Database) {
 
     CREATE TABLE IF NOT EXISTS sessions (
       id                  TEXT PRIMARY KEY,
+      user_id             TEXT,
       created_at          TEXT NOT NULL,
       finished_at         TEXT,
       status              TEXT NOT NULL DEFAULT 'in_progress',
@@ -187,6 +188,7 @@ function migrate(db: Database.Database) {
   ensureColumn(db, "questions", "level_min", "INTEGER NOT NULL DEFAULT 3");
   ensureColumn(db, "questions", "level_max", "INTEGER NOT NULL DEFAULT 7");
   ensureColumn(db, "sessions", "level", "TEXT NOT NULL DEFAULT 'L4'");
+  ensureColumn(db, "sessions", "user_id", "TEXT");
 }
 
 // Add a column to an existing table if it isn't already present.
@@ -292,6 +294,7 @@ export function pickQuestionsForLevel(db: Database.Database, n: number, level: n
 export function createSession(
   methodology: MethodologyId = DEFAULT_METHODOLOGY,
   level: LevelId = DEFAULT_LEVEL,
+  userId: string | null = null,
 ): SessionRow {
   const db = getDb();
   const id = randomUUID();
@@ -299,8 +302,8 @@ export function createSession(
 
   const tx = db.transaction(() => {
     db.prepare(
-      "INSERT INTO sessions (id, created_at, status, main_question_count, current_main_index, methodology, level) VALUES (?, ?, 'in_progress', ?, 0, ?, ?)",
-    ).run(id, now(), MAIN_QUESTIONS, methodology, level);
+      "INSERT INTO sessions (id, user_id, created_at, status, main_question_count, current_main_index, methodology, level) VALUES (?, ?, ?, 'in_progress', ?, 0, ?, ?)",
+    ).run(id, userId, now(), MAIN_QUESTIONS, methodology, level);
 
     const insertSQ = db.prepare(
       "INSERT INTO session_questions (session_id, question_id, position, status) VALUES (?, ?, ?, ?)",
@@ -332,6 +335,13 @@ function introText(methodologyId: MethodologyId, levelId: LevelId): string {
 
 export function getSession(id: string): SessionRow | undefined {
   return getDb().prepare("SELECT * FROM sessions WHERE id = ?").get(id) as SessionRow | undefined;
+}
+
+// Sessions belonging to a signed-in user, newest first — backs the history view.
+export function getSessionsForUser(userId: string): SessionRow[] {
+  return getDb()
+    .prepare("SELECT * FROM sessions WHERE user_id = ? ORDER BY created_at DESC")
+    .all(userId) as SessionRow[];
 }
 
 export function getQuestion(id: number): Question | undefined {

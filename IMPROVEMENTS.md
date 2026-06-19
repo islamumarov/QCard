@@ -5,6 +5,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Link sessions to the signed-in user** — `sessions.user_id` (nullable, additive
+  migration) is stamped on create from `(await auth())?.user?.email` in the session
+  route, but only when `authConfigured` — anonymous (`null`) otherwise, mirroring the
+  gracefully-optional auth pattern. Added `getSessionsForUser()` to scope history by
+  user, ready for the `/history` view. `SessionRow.user_id` typed. _(iteration 3)_
 - **Google OAuth sign-in (Auth.js / NextAuth v5)** — added `next-auth@5` with a
   Google provider that is gracefully optional: `authConfigured` (in `src/auth.ts`)
   is true only when `GOOGLE_CLIENT_ID`/`SECRET` are set, mirroring the LLM-key
@@ -19,12 +24,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Link sessions to the signed-in user** — add `sessions.user_id` (nullable), record it
-   on create (read `await auth()` in the session route), scope future history to the user.
-   Now unblocked — Auth.js is wired.
-2. **Interview history view** — `/history` page listing past sessions (level, framework,
-   rating, date) reading from SQLite; resume/review a past transcript + feedback.
-3. **Export a session** — download transcript + feedback as Markdown/JSON from the
+1. **Interview history view** — `/history` page listing past sessions (level, framework,
+   rating, date) reading from SQLite via `getSessionsForUser`; resume/review a past
+   transcript + feedback. Now unblocked — `user_id` + getter are wired.
+2. **Export a session** — download transcript + feedback as Markdown/JSON from the
    feedback screen.
 
 ## Backlog (ideas)
