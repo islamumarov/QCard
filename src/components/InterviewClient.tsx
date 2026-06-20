@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import FeedbackReport from "@/components/FeedbackReport";
+import { InterviewSkeleton } from "@/components/Skeleton";
 import { useSpeechRecognition, useSpeechSynthesis } from "@/hooks/useSpeech";
 import type { InterviewState, Turn } from "@/lib/types";
 
@@ -131,7 +132,14 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
     );
   }
   if (!state) {
-    return <div className="deck-card animate-pulse p-6 text-center text-slate-400">Loading interview…</div>;
+    return (
+      <>
+        <p className="sr-only" role="status">
+          Loading interview…
+        </p>
+        <InterviewSkeleton />
+      </>
+    );
   }
 
   const finished = state.awaiting === "done";

@@ -5,6 +5,15 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Loading skeletons** — replaced the bare "Loading…" text with pulsing
+  skeleton placeholders that mirror real layout. New `src/components/Skeleton.tsx`
+  exports `InterviewSkeleton` (chip row + question block + composer) and
+  `HistorySkeleton`/`HistoryRowSkeleton` (badge chips + score box). The interview
+  view renders `InterviewSkeleton` while session state loads; a new route-segment
+  `src/app/history/loading.tsx` shows `HistorySkeleton` (reusing the page Shell
+  heading) during the server fetch. Skeletons are `aria-hidden` decoration paired
+  with an `sr-only` `role="status"` "Loading…" line so screen readers still get a
+  spoken status. _(iteration 8)_
 - **Export from history** — each `/history` row now offers **MD** and **JSON**
   download links next to its delete button. A new route handler
   `GET /api/session/:id/export?format=md|json` reuses the same pure builders as
@@ -54,10 +63,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Loading skeletons** — replace plain "Loading…" with skeleton cards on the
-   interview + history views for a calmer perceived load.
-2. **Per-session review page** — a read-only `/interview/{id}` already resumes;
+1. **Per-session review page** — a read-only `/interview/{id}` already resumes;
    consider a dedicated printable summary view that embeds the export inline.
+2. **Light theme + prefers-color-scheme** — the app is dark-only (`color-scheme: dark`);
+   add a light palette and honour the OS preference.
 
 ## Backlog (ideas)
 
