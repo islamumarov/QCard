@@ -145,13 +145,21 @@ export function useSpeechSynthesis() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURIState] = useState<string | null>(null);
 
-  // Load voices (async — populated after the `voiceschanged` event fires).
-  useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    setSupported(true);
-    const synth = window.speechSynthesis;
+  // Whether the server-side Kokoro TTS endpoint is reachable. Null = unknown.
+  const serverTtsEnabled = useRef<boolean | null>(null);
+  // Currently playing server audio + the request token that owns it, so a newer
+  // speak() call can invalidate an in-flight fetch from an older one.
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playToken = useRef(0);
 
+  // Browser Web Speech support (fallback) + probe the Kokoro TTS proxy once.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ("speechSynthesis" in window) setSupported(true);
+
+    const synth = "speechSynthesis" in window ? window.speechSynthesis : null;
     const load = () => {
+      if (!synth) return;
       const list = synth.getVoices().filter((v) => /^en/i.test(v.lang));
       if (!list.length) return;
       setVoices(list);
@@ -162,10 +170,21 @@ export function useSpeechSynthesis() {
         return pickBest(list)?.voiceURI ?? null;
       });
     };
-
     load();
-    synth.addEventListener?.("voiceschanged", load);
-    return () => synth.removeEventListener?.("voiceschanged", load);
+    synth?.addEventListener?.("voiceschanged", load);
+
+    // Probe Kokoro; enables the controls even without browser voices.
+    fetch("/api/tts")
+      .then((r) => (r.ok ? r.json() : { enabled: false }))
+      .then((d: { enabled?: boolean }) => {
+        serverTtsEnabled.current = Boolean(d.enabled);
+        if (d.enabled) setSupported(true);
+      })
+      .catch(() => {
+        serverTtsEnabled.current = false;
+      });
+
+    return () => synth?.removeEventListener?.("voiceschanged", load);
   }, []);
 
   const setVoiceURI = useCallback((uri: string) => {
@@ -173,18 +192,31 @@ export function useSpeechSynthesis() {
     if (typeof window !== "undefined") window.localStorage.setItem(VOICE_STORAGE_KEY, uri);
   }, []);
 
-  const cancel = useCallback(() => {
-    if (typeof window === "undefined") return;
-    window.speechSynthesis.cancel();
-    setSpeaking(false);
+  const stopBrowser = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
   }, []);
 
-  const speak = useCallback(
+  const stopServerAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+  }, []);
+
+  const cancel = useCallback(() => {
+    playToken.current += 1; // invalidate any in-flight fetch
+    stopServerAudio();
+    stopBrowser();
+    setSpeaking(false);
+  }, [stopServerAudio, stopBrowser]);
+
+  // Web Speech fallback (Chrome/Safari built-in voices).
+  const speakBrowser = useCallback(
     (text: string) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window) || !text) return;
       const synth = window.speechSynthesis;
-      synth.cancel(); // stop anything in flight
-
+      synth.cancel();
       const u = new SpeechSynthesisUtterance(text);
       const all = synth.getVoices();
       const chosen = (voiceURI && all.find((v) => v.voiceURI === voiceURI)) || pickBest(all);
@@ -194,7 +226,6 @@ export function useSpeechSynthesis() {
       } else {
         u.lang = "en-US";
       }
-      // Slightly slower + natural pitch reads less robotic for interview prompts.
       u.rate = 0.95;
       u.pitch = 1;
       u.onstart = () => setSpeaking(true);
@@ -203,6 +234,48 @@ export function useSpeechSynthesis() {
       synth.speak(u);
     },
     [voiceURI],
+  );
+
+  const speak = useCallback(
+    (text: string) => {
+      if (!text) return;
+      cancel();
+      // No server TTS -> straight to the browser voices.
+      if (serverTtsEnabled.current === false) {
+        speakBrowser(text);
+        return;
+      }
+      const token = (playToken.current += 1);
+      setSpeaking(true);
+      fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      })
+        .then(async (res) => {
+          if (token !== playToken.current) return; // superseded by a newer speak()
+          if (!res.ok) throw new Error(`tts ${res.status}`);
+          const blob = await res.blob();
+          if (token !== playToken.current) return;
+          const audio = new Audio(URL.createObjectURL(blob));
+          audioRef.current = audio;
+          audio.onended = () => {
+            if (token === playToken.current) setSpeaking(false);
+            URL.revokeObjectURL(audio.src);
+          };
+          audio.onerror = () => {
+            if (token === playToken.current) setSpeaking(false);
+          };
+          await audio.play();
+        })
+        .catch(() => {
+          if (token !== playToken.current) return;
+          // Kokoro failed mid-session — fall back to the browser voice.
+          serverTtsEnabled.current = false;
+          speakBrowser(text);
+        });
+    },
+    [cancel, speakBrowser],
   );
 
   return { supported, speaking, voices, voiceURI, setVoiceURI, speak, cancel };

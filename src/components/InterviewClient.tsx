@@ -47,14 +47,16 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state?.transcript.length]);
 
-  // ---- speak the newest interviewer line ----
+  // ---- speak every unspoken interviewer line, in order ----
   useEffect(() => {
     if (!state || !autoSpeak || !tts.supported) return;
-    const lastInterviewer = [...state.transcript].reverse().find((t) => t.role === "interviewer");
-    if (lastInterviewer && lastInterviewer.id !== lastSpokenId.current) {
-      lastSpokenId.current = lastInterviewer.id;
-      tts.speak(lastInterviewer.content);
-    }
+    const unspoken = state.transcript
+      .filter((t) => t.role === "interviewer" && t.id > lastSpokenId.current)
+      .sort((a, b) => a.id - b.id);
+    if (!unspoken.length) return;
+    lastSpokenId.current = unspoken[unspoken.length - 1].id;
+    // One utterance — back-to-back speak() calls race in Chrome and drop lines.
+    tts.speak(unspoken.map((t) => t.content).join("\n\n"));
   }, [state, autoSpeak, tts]);
 
   // ---- request feedback once the last question is answered ----
