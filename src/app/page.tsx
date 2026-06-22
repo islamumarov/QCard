@@ -50,18 +50,18 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center gap-8 text-center">
       <div className="deck-card w-full max-w-xl p-8">
-        <div className="mx-auto mb-6 grid h-44 w-32 rotate-[-4deg] place-items-center rounded-2xl border border-white/15 bg-gradient-to-br from-accent/40 to-accent2/20 p-4 shadow-2xl">
+        <div className="mx-auto mb-6 grid h-44 w-32 rotate-[-4deg] place-items-center rounded-2xl border border-edge bg-gradient-to-br from-accent/40 to-accent2/20 p-4 shadow-2xl">
           <span className="text-5xl">🎴</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight">Behavioral Interview, gamified</h1>
-        <p className="mx-auto mt-3 max-w-md text-slate-300">
+        <p className="mx-auto mt-3 max-w-md text-muted">
           Draw a random card. Answer out loud — we listen. Claude plays the interviewer: it probes with real
           follow-ups, then after 5 questions delivers a full feedback report on what was strong and what to improve.
         </p>
 
         {/* methodology chooser */}
         <div className="mt-7 text-left">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
             Pick your answer framework
           </h2>
           <div className="grid gap-2">
@@ -76,12 +76,12 @@ export default function Home() {
                   className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
                     selected
                       ? "border-accent bg-accent/15 ring-1 ring-accent"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                      : "border-edge bg-surface hover:bg-surface-2"
                   }`}
                 >
                   <span
                     className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
-                      selected ? "border-accent bg-accent text-white" : "border-white/30"
+                      selected ? "border-accent bg-accent text-white" : "border-edge-strong"
                     }`}
                   >
                     {selected && <span className="text-[11px] leading-none">✓</span>}
@@ -89,9 +89,9 @@ export default function Home() {
                   <span>
                     <span className="flex items-baseline gap-2">
                       <span className="font-bold">{m.name}</span>
-                      <span className="text-xs text-slate-400">{m.expansion}</span>
+                      <span className="text-xs text-muted">{m.expansion}</span>
                     </span>
-                    <span className="mt-0.5 block text-xs text-slate-400">{m.blurb}</span>
+                    <span className="mt-0.5 block text-xs text-muted">{m.blurb}</span>
                   </span>
                 </button>
               );
@@ -101,7 +101,7 @@ export default function Home() {
 
         {/* level chooser — the BAR; sibling to the framework block above */}
         <div className="mt-7 text-left">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Target level</h2>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Target level</h2>
           <div className="grid grid-cols-5 gap-2">
             {LEVEL_LIST.map((l) => {
               const selected = l.id === level;
@@ -116,7 +116,7 @@ export default function Home() {
                   className={`rounded-xl border px-2 py-2.5 text-center text-sm font-bold transition ${
                     selected
                       ? "border-accent bg-accent/15 ring-1 ring-accent"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                      : "border-edge bg-surface hover:bg-surface-2"
                   }`}
                 >
                   {l.shortLabel}
@@ -127,14 +127,14 @@ export default function Home() {
           {(() => {
             const sel = LEVEL_LIST.find((l) => l.id === level)!;
             return (
-              <div className="mt-2 text-xs text-slate-400">
-                <span className="font-semibold text-slate-300">{sel.name}</span> — {sel.scopeBlurb}
+              <div className="mt-2 text-xs text-muted">
+                <span className="font-semibold text-muted">{sel.name}</span> — {sel.scopeBlurb}
               </div>
             );
           })()}
         </div>
 
-        <ul className="mx-auto mt-6 grid max-w-sm gap-2 text-left text-sm text-slate-300">
+        <ul className="mx-auto mt-6 grid max-w-sm gap-2 text-left text-sm text-muted">
           <li>🎤 Speech-to-text — answer by talking</li>
           <li>🔊 Text-to-speech — the interviewer reads questions aloud</li>
           <li>🧠 Adaptive follow-ups based on your actual answer</li>
@@ -163,7 +163,7 @@ export default function Home() {
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
       </div>
 
-      <p className="max-w-md text-xs text-slate-500">
+      <p className="max-w-md text-xs text-subtle">
         Tip: voice features use your browser&apos;s built-in Web Speech API (best in Chrome / Edge). You can always
         type instead.
       </p>

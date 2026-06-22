@@ -21,7 +21,7 @@ export default function DeleteSessionButton({ id, label }: { id: string; label: 
         type="submit"
         aria-label={`Delete interview: ${label}`}
         title="Delete interview"
-        className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-400/40 hover:bg-rose-400/10 hover:text-rose-300"
+        className="grid h-8 w-8 place-items-center rounded-lg border border-edge text-muted transition hover:border-rose-400/40 hover:bg-rose-400/10 hover:text-rose-300"
       >
         ✕
       </button>

@@ -170,7 +170,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
 
       {/* progress */}
       <div>
-        <div className="mb-2 flex items-center justify-between text-sm text-slate-400">
+        <div className="mb-2 flex items-center justify-between text-sm text-muted">
           <span>
             Question {Math.min(state.currentMainIndex + (finished || generatingFeedback ? 0 : 1), state.mainQuestionCount)} of{" "}
             {state.mainQuestionCount}
@@ -184,7 +184,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
             </div>
           )}
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
           <div
             className="h-full rounded-full bg-gradient-to-r from-accent to-accent2 transition-all"
             style={{ width: `${(answered / state.mainQuestionCount) * 100}%` }}
@@ -231,12 +231,12 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
         <FeedbackReport feedback={state.feedback} state={state} />
       ) : generatingFeedback ? (
         <div className="deck-card p-6 text-center">
-          <p className="animate-pulse text-slate-300">🧠 The interviewer is preparing your feedback…</p>
+          <p className="animate-pulse text-muted">🧠 The interviewer is preparing your feedback…</p>
         </div>
       ) : (
         <div className="deck-card p-4">
           <textarea
-            className="w-full resize-none rounded-xl border border-white/10 bg-ink/60 p-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-accent"
+            className="w-full resize-none rounded-xl border border-edge bg-surface p-3 text-fg outline-none placeholder:text-subtle focus:border-accent"
             rows={4}
             placeholder={stt.listening ? "Listening… speak your answer" : "Type your answer, or tap the mic to speak…"}
             value={answer}
@@ -263,7 +263,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
                   {stt.listening ? "⏹ Stop" : "🎤 Speak"}
                 </button>
               ) : (
-                <span className="text-xs text-slate-500">Mic not supported in this browser — type instead.</span>
+                <span className="text-xs text-subtle">Mic not supported in this browser — type instead.</span>
               )}
               {answer && (
                 <button className="btn-ghost text-sm" onClick={() => { setAnswer(""); stt.reset(); }} disabled={busy}>
@@ -272,7 +272,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="hidden text-xs text-slate-500 sm:inline">⌘/Ctrl + ↵</span>
+              <span className="hidden text-xs text-subtle sm:inline">⌘/Ctrl + ↵</span>
               <button className="btn-primary" onClick={submitAnswer} disabled={busy || !answer.trim()}>
                 {busy ? "Thinking…" : "Send answer"}
               </button>
@@ -299,13 +299,13 @@ function Bubble({ turn }: { turn: Turn }) {
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
           isCandidate
-            ? "rounded-br-sm bg-accent/20 text-slate-100"
+            ? "rounded-br-sm bg-accent/20 text-fg"
             : turn.kind === "main"
-              ? "rounded-bl-sm border border-accent2/30 bg-accent2/10 text-slate-100"
-              : "rounded-bl-sm bg-white/5 text-slate-200"
+              ? "rounded-bl-sm border border-accent2/30 bg-accent2/10 text-fg"
+              : "rounded-bl-sm bg-surface text-fg"
         }`}
       >
-        <div className="mb-0.5 text-[10px] uppercase tracking-wide text-slate-400">{labels[turn.kind]}</div>
+        <div className="mb-0.5 text-[10px] uppercase tracking-wide text-muted">{labels[turn.kind]}</div>
         {turn.content}
       </div>
     </div>

@@ -5,6 +5,18 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Light theme + `prefers-color-scheme`** — the app was dark-only; it now ships a
+  light palette that swaps in automatically from the OS preference, no JS and no
+  `dark:` variants. `globals.css` defines semantic CSS vars (`--bg`, `--card`,
+  `--fg`, `--muted`, `--subtle`, `--edge`/`--edge-strong`, `--surface`/`--surface-2`,
+  plus background-gradient `--grad-1/2`) with a `@media (prefers-color-scheme: light)`
+  override; `tailwind.config.ts` exposes them as theme-aware color tokens
+  (`bg`, `card`, `surface`, `surface-2`, `edge`, `edge-strong`, `fg`, `muted`,
+  `subtle`). Every hardcoded `slate-*` / `white\/*` / `bg-ink` class across the 8
+  color-using files was migrated to those tokens, and `.btn`/`.chip`/`.deck-card`
+  now reference them, so flipping a dozen variables reskins the whole UI. Accent and
+  status colours (emerald/amber/rose) stay as-is — they read on both backgrounds.
+  _(iteration 9)_
 - **Loading skeletons** — replaced the bare "Loading…" text with pulsing
   skeleton placeholders that mirror real layout. New `src/components/Skeleton.tsx`
   exports `InterviewSkeleton` (chip row + question block + composer) and
@@ -65,8 +77,9 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 1. **Per-session review page** — a read-only `/interview/{id}` already resumes;
    consider a dedicated printable summary view that embeds the export inline.
-2. **Light theme + prefers-color-scheme** — the app is dark-only (`color-scheme: dark`);
-   add a light palette and honour the OS preference.
+2. **Manual theme toggle** — light theme now follows the OS; add an explicit
+   light/dark/system switch (persist in `localStorage`, set a `data-theme` on
+   `<html>` that overrides the media query) for users who want to force one.
 
 ## Backlog (ideas)
 
@@ -74,7 +87,6 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 - Per-question timer / pacing indicator.
 - "Retry this answer" before moving on.
 - Difficulty/level mismatch warning if the deck had to widen far from target.
-- Light theme + prefers-color-scheme support.
 - Rate-limit / abuse guard on the API routes.
 - Unit tests for `pickQuestionsForLevel`, `levelBand`, methodology/level prompt builders.
 - Analytics: aggregate ratings over time per level/framework.

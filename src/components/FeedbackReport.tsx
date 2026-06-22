@@ -5,10 +5,10 @@ function List({ title, items, tone }: { title: string; items: string[]; tone: "g
   const dot = tone === "good" ? "bg-good" : tone === "warn" ? "bg-warn" : "bg-accent2";
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">{title}</h3>
+      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h3>
       <ul className="space-y-2">
         {items.map((it, i) => (
-          <li key={i} className="flex gap-2 text-sm text-slate-200">
+          <li key={i} className="flex gap-2 text-sm text-fg">
             <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
             <span>{it}</span>
           </li>
@@ -25,11 +25,11 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
         <h2 className="text-xl font-bold">Interview feedback</h2>
         <div className="flex items-center gap-2">
           <span className="text-3xl font-bold text-accent">{feedback.rating}</span>
-          <span className="text-sm text-slate-400">/ 10</span>
+          <span className="text-sm text-muted">/ 10</span>
         </div>
       </div>
 
-      <p className="mb-6 rounded-xl border border-white/10 bg-white/5 p-4 text-sm leading-relaxed text-slate-200">
+      <p className="mb-6 rounded-xl border border-edge bg-surface p-4 text-sm leading-relaxed text-fg">
         {feedback.overall}
       </p>
 
@@ -41,7 +41,7 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
 
       {state && (
         <div className="mt-6">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Export</h3>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Export</h3>
           <div className="flex flex-wrap gap-2">
             <button
               className="btn-ghost text-sm"

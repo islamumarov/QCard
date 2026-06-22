@@ -29,7 +29,7 @@ export default async function AuthButton() {
               <img src={user.image} alt="" className="h-5 w-5 rounded-full" />
             ) : null}
             <span className="max-w-[10rem] truncate">{label}</span>
-            <span className="text-slate-400">· sign out</span>
+            <span className="text-muted">· sign out</span>
           </button>
         </form>
       </>

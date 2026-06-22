@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
           <main className="flex-1">{children}</main>
-          <footer className="mt-10 text-center text-xs text-slate-500">
+          <footer className="mt-10 text-center text-xs text-subtle">
             Voice-driven mock interviews · answers analyzed by Claude · all sessions saved to SQLite
           </footer>
         </div>

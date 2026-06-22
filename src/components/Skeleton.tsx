@@ -4,7 +4,7 @@
 // real loading status is announced via an sr-only live region by the caller.
 
 function Bar({ className = "" }: { className?: string }) {
-  return <div className={`rounded bg-white/10 ${className}`} />;
+  return <div className={`rounded bg-surface-2 ${className}`} />;
 }
 
 // Mirrors a single /history row: badge chips + meta line on the left, score box

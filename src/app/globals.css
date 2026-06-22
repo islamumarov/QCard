@@ -2,20 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Semantic theme tokens. Dark is the default; the light palette is swapped in
+   purely via `prefers-color-scheme` — no JS, no `dark:` variants. Every surface
+   colour in the app maps to one of these vars (see tailwind.config: bg, card,
+   surface, edge, fg, muted, subtle), so flipping these few values reskins the
+   whole UI. */
 :root {
   color-scheme: dark;
+  --bg: #0f1220;
+  --card: rgba(22, 26, 46, 0.8);
+  --fg: #f1f5f9; /* slate-100 */
+  --muted: #94a3b8; /* slate-400 */
+  --subtle: #64748b; /* slate-500 */
+  --edge: rgba(255, 255, 255, 0.1);
+  --edge-strong: rgba(255, 255, 255, 0.3);
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-2: rgba(255, 255, 255, 0.1);
+  --grad-1: rgba(124, 92, 255, 0.18);
+  --grad-2: rgba(34, 211, 238, 0.12);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f6f7fb;
+    --card: rgba(255, 255, 255, 0.85);
+    --fg: #0f172a; /* slate-900 */
+    --muted: #475569; /* slate-600 */
+    --subtle: #64748b; /* slate-500 */
+    --edge: rgba(15, 23, 42, 0.1);
+    --edge-strong: rgba(15, 23, 42, 0.25);
+    --surface: rgba(15, 23, 42, 0.04);
+    --surface-2: rgba(15, 23, 42, 0.08);
+    --grad-1: rgba(124, 92, 255, 0.12);
+    --grad-2: rgba(34, 211, 238, 0.1);
+  }
 }
 
 body {
-  @apply bg-ink text-slate-100 antialiased;
-  background-image: radial-gradient(900px 500px at 80% -10%, rgba(124, 92, 255, 0.18), transparent),
-    radial-gradient(700px 500px at 0% 0%, rgba(34, 211, 238, 0.12), transparent);
+  @apply bg-bg text-fg antialiased;
+  background-image: radial-gradient(900px 500px at 80% -10%, var(--grad-1), transparent),
+    radial-gradient(700px 500px at 0% 0%, var(--grad-2), transparent);
   min-height: 100vh;
 }
 
 /* subtle card hover */
 .deck-card {
-  @apply rounded-2xl border border-white/10 bg-card/80 shadow-xl backdrop-blur transition;
+  @apply rounded-2xl border border-edge bg-card shadow-xl backdrop-blur transition;
 }
 
 .btn {
@@ -25,11 +58,11 @@ body {
   @apply btn bg-accent text-white hover:brightness-110;
 }
 .btn-ghost {
-  @apply btn border border-white/15 bg-white/5 text-slate-100 hover:bg-white/10;
+  @apply btn border border-edge bg-surface text-fg hover:bg-surface-2;
 }
 
 .chip {
-  @apply inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300;
+  @apply inline-flex items-center rounded-full border border-edge bg-surface px-3 py-1 text-xs font-medium text-muted;
 }
 
 /* pulse for the recording mic */

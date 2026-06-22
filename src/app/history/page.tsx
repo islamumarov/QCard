@@ -46,7 +46,7 @@ export default async function HistoryPage() {
   if (!authConfigured) {
     return (
       <Shell>
-        <div className="deck-card p-6 text-sm text-slate-300">
+        <div className="deck-card p-6 text-sm text-muted">
           Sign-in isn&apos;t configured on this deployment, so sessions aren&apos;t tied to an account and
           can&apos;t be listed here. Your latest interview still lives at its own link.
         </div>
@@ -58,7 +58,7 @@ export default async function HistoryPage() {
   if (!user?.email) {
     return (
       <Shell>
-        <div className="deck-card p-6 text-sm text-slate-300">
+        <div className="deck-card p-6 text-sm text-muted">
           Sign in with Google (top right) to see your past interviews — level, framework, score, and date.
         </div>
       </Shell>
@@ -70,7 +70,7 @@ export default async function HistoryPage() {
   if (sessions.length === 0) {
     return (
       <Shell>
-        <div className="deck-card p-6 text-sm text-slate-300">
+        <div className="deck-card p-6 text-sm text-muted">
           No interviews yet.{" "}
           <Link href="/" className="font-semibold text-accent hover:underline">
             Start your first one
@@ -93,7 +93,7 @@ export default async function HistoryPage() {
             <li key={s.id} className="flex items-stretch gap-2">
               <Link
                 href={`/interview/${s.id}`}
-                className="deck-card flex flex-1 items-center gap-4 p-4 transition hover:bg-white/10"
+                className="deck-card flex flex-1 items-center gap-4 p-4 transition hover:bg-surface-2"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -103,7 +103,7 @@ export default async function HistoryPage() {
                       {completed ? "Completed" : "In progress"}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs text-slate-400">
+                  <div className="mt-2 text-xs text-muted">
                     {fmtDate(s.created_at)} · {level.name}
                   </div>
                 </div>
@@ -117,7 +117,7 @@ export default async function HistoryPage() {
                     {feedback.rating}
                   </span>
                 ) : (
-                  <span className="text-slate-500" aria-hidden>
+                  <span className="text-subtle" aria-hidden>
                     →
                   </span>
                 )}
@@ -127,7 +127,7 @@ export default async function HistoryPage() {
                   <a
                     href={`/api/session/${s.id}/export?format=md`}
                     download
-                    className="chip text-xs hover:bg-white/10"
+                    className="chip text-xs hover:bg-surface-2"
                     title="Download as Markdown"
                     aria-label={`Download ${level.shortLabel} ${methodology.name} interview as Markdown`}
                   >
@@ -136,7 +136,7 @@ export default async function HistoryPage() {
                   <a
                     href={`/api/session/${s.id}/export?format=json`}
                     download
-                    className="chip text-xs hover:bg-white/10"
+                    className="chip text-xs hover:bg-surface-2"
                     title="Download as JSON"
                     aria-label={`Download ${level.shortLabel} ${methodology.name} interview as JSON`}
                   >
