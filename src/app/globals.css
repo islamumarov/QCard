@@ -3,11 +3,15 @@
 @tailwind utilities;
 
 /* Semantic theme tokens. Dark is the default; the light palette is swapped in
-   purely via `prefers-color-scheme` — no JS, no `dark:` variants. Every surface
-   colour in the app maps to one of these vars (see tailwind.config: bg, card,
-   surface, edge, fg, muted, subtle), so flipping these few values reskins the
-   whole UI. */
-:root {
+   either automatically via `prefers-color-scheme` (the "system" mode) or
+   explicitly when ThemeToggle sets `data-theme="light"|"dark"` on <html>
+   (persisted in localStorage). Every surface colour in the app maps to one of
+   these vars (see tailwind.config: bg, card, surface, edge, fg, muted, subtle),
+   so flipping these few values reskins the whole UI. The light-palette block is
+   duplicated so an explicit choice and the OS preference share one source of
+   truth; an explicit `data-theme` always wins over the media query. */
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0f1220;
   --card: rgba(22, 26, 46, 0.8);
@@ -22,8 +26,23 @@
   --grad-2: rgba(34, 211, 238, 0.12);
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f7fb;
+  --card: rgba(255, 255, 255, 0.85);
+  --fg: #0f172a; /* slate-900 */
+  --muted: #475569; /* slate-600 */
+  --subtle: #64748b; /* slate-500 */
+  --edge: rgba(15, 23, 42, 0.1);
+  --edge-strong: rgba(15, 23, 42, 0.25);
+  --surface: rgba(15, 23, 42, 0.04);
+  --surface-2: rgba(15, 23, 42, 0.08);
+  --grad-1: rgba(124, 92, 255, 0.12);
+  --grad-2: rgba(34, 211, 238, 0.1);
+}
+
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: light;
     --bg: #f6f7fb;
     --card: rgba(255, 255, 255, 0.85);

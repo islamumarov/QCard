@@ -5,6 +5,16 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Manual theme toggle (light/dark/system)** — added an explicit switch on top of
+  the OS-following light theme. New client `src/components/ThemeToggle.tsx` cycles
+  system → light → dark, persisting the choice in `localStorage` (`qcard-theme`) and
+  setting `data-theme` on `<html>`. `globals.css` now carries the dark vars under
+  `:root, :root[data-theme="dark"]`, an explicit light block under
+  `:root[data-theme="light"]`, and the OS-preference light block guarded by
+  `:root:not([data-theme])` so an explicit choice always wins over the media query.
+  A tiny inline script in `layout.tsx` (`<head>`) applies the stored choice before
+  first paint to avoid a theme flash; `<html suppressHydrationWarning>` covers the
+  attribute. The toggle chip sits in the header next to auth. _(iteration 10)_
 - **Light theme + `prefers-color-scheme`** — the app was dark-only; it now ships a
   light palette that swaps in automatically from the OS preference, no JS and no
   `dark:` variants. `globals.css` defines semantic CSS vars (`--bg`, `--card`,
@@ -77,9 +87,8 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 1. **Per-session review page** — a read-only `/interview/{id}` already resumes;
    consider a dedicated printable summary view that embeds the export inline.
-2. **Manual theme toggle** — light theme now follows the OS; add an explicit
-   light/dark/system switch (persist in `localStorage`, set a `data-theme` on
-   `<html>` that overrides the media query) for users who want to force one.
+2. **Keyboard nav for landing choosers** — arrow keys within the methodology/level
+   radiogroups (roving tabindex), so the chooser is fully keyboard-operable.
 
 ## Backlog (ideas)
 
