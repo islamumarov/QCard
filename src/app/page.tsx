@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { RadioGroup } from "@/components/RadioGroup";
 import { DEFAULT_LEVEL, LEVEL_LIST } from "@/lib/levels";
 import { DEFAULT_METHODOLOGY, METHODOLOGY_LIST } from "@/lib/methodologies";
 import type { InterviewState, LevelId, MethodologyId } from "@/lib/types";
@@ -64,66 +65,70 @@ export default function Home() {
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
             Pick your answer framework
           </h2>
-          <div className="grid gap-2">
-            {METHODOLOGY_LIST.map((m) => {
+          <RadioGroup
+            ariaLabel="Pick your answer framework"
+            orientation="vertical"
+            className="grid gap-2"
+            value={methodology}
+            onChange={setMethodology}
+            options={METHODOLOGY_LIST.map((m) => {
               const selected = m.id === methodology;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMethodology(m.id)}
-                  aria-pressed={selected}
-                  className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
-                    selected
-                      ? "border-accent bg-accent/15 ring-1 ring-accent"
-                      : "border-edge bg-surface hover:bg-surface-2"
-                  }`}
-                >
-                  <span
-                    className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
-                      selected ? "border-accent bg-accent text-white" : "border-edge-strong"
-                    }`}
-                  >
-                    {selected && <span className="text-[11px] leading-none">✓</span>}
-                  </span>
-                  <span>
-                    <span className="flex items-baseline gap-2">
-                      <span className="font-bold">{m.name}</span>
-                      <span className="text-xs text-muted">{m.expansion}</span>
+              return {
+                id: m.id,
+                ariaLabel: `${m.name} — ${m.expansion}. ${m.blurb}`,
+                className: `flex items-start gap-3 rounded-xl border p-3 text-left transition ${
+                  selected
+                    ? "border-accent bg-accent/15 ring-1 ring-accent"
+                    : "border-edge bg-surface hover:bg-surface-2"
+                }`,
+                content: (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                        selected ? "border-accent bg-accent text-white" : "border-edge-strong"
+                      }`}
+                    >
+                      {selected && <span className="text-[11px] leading-none">✓</span>}
                     </span>
-                    <span className="mt-0.5 block text-xs text-muted">{m.blurb}</span>
-                  </span>
-                </button>
-              );
+                    <span>
+                      <span className="flex items-baseline gap-2">
+                        <span className="font-bold">{m.name}</span>
+                        <span className="text-xs text-muted">{m.expansion}</span>
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted">{m.blurb}</span>
+                    </span>
+                  </>
+                ),
+              };
             })}
-          </div>
+          />
         </div>
 
         {/* level chooser — the BAR; sibling to the framework block above */}
         <div className="mt-7 text-left">
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Target level</h2>
-          <div className="grid grid-cols-5 gap-2">
-            {LEVEL_LIST.map((l) => {
+          <RadioGroup
+            ariaLabel="Target level"
+            orientation="horizontal"
+            className="grid grid-cols-5 gap-2"
+            value={level}
+            onChange={setLevel}
+            options={LEVEL_LIST.map((l) => {
               const selected = l.id === level;
-              return (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => setLevel(l.id)}
-                  aria-pressed={selected}
-                  aria-label={`${l.title} — ${l.scopeBlurb}`}
-                  title={`${l.title} — ${l.scopeBlurb}`}
-                  className={`rounded-xl border px-2 py-2.5 text-center text-sm font-bold transition ${
-                    selected
-                      ? "border-accent bg-accent/15 ring-1 ring-accent"
-                      : "border-edge bg-surface hover:bg-surface-2"
-                  }`}
-                >
-                  {l.shortLabel}
-                </button>
-              );
+              return {
+                id: l.id,
+                ariaLabel: `${l.title} — ${l.scopeBlurb}`,
+                title: `${l.title} — ${l.scopeBlurb}`,
+                content: l.shortLabel,
+                className: `rounded-xl border px-2 py-2.5 text-center text-sm font-bold transition ${
+                  selected
+                    ? "border-accent bg-accent/15 ring-1 ring-accent"
+                    : "border-edge bg-surface hover:bg-surface-2"
+                }`,
+              };
             })}
-          </div>
+          />
           {(() => {
             const sel = LEVEL_LIST.find((l) => l.id === level)!;
             return (

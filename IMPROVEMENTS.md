@@ -5,6 +5,16 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Keyboard nav for landing choosers** — the methodology list and the level bar
+  on `/` are now proper WAI-ARIA radiogroups instead of `aria-pressed` button
+  grids. New reusable `src/components/RadioGroup.tsx` implements the roving-tabindex
+  pattern: only the selected option is tab-focusable, and Arrow keys (Up/Down for
+  the vertical methodology list, Left/Right for the horizontal level bar) move both
+  focus and selection, with Home/End jumping to the ends and wrap-around. It's
+  render-prop driven (`content`/`className`/`ariaLabel`/`title` per option) so the
+  two visually-different choosers share one keyboard behaviour. `page.tsx` maps its
+  existing option markup into the component unchanged; the methodology check icon is
+  `aria-hidden` and each option carries a full spoken `aria-label`. _(iteration 11)_
 - **Manual theme toggle (light/dark/system)** — added an explicit switch on top of
   the OS-following light theme. New client `src/components/ThemeToggle.tsx` cycles
   system → light → dark, persisting the choice in `localStorage` (`qcard-theme`) and
@@ -87,8 +97,6 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 1. **Per-session review page** — a read-only `/interview/{id}` already resumes;
    consider a dedicated printable summary view that embeds the export inline.
-2. **Keyboard nav for landing choosers** — arrow keys within the methodology/level
-   radiogroups (roving tabindex), so the chooser is fully keyboard-operable.
 
 ## Backlog (ideas)
 
@@ -99,8 +107,6 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 - Rate-limit / abuse guard on the API routes.
 - Unit tests for `pickQuestionsForLevel`, `levelBand`, methodology/level prompt builders.
 - Analytics: aggregate ratings over time per level/framework.
-- Keyboard nav for the landing-page choosers (arrow keys within radiogroup).
-- Loading skeletons instead of plain "Loading…".
 
 ## Conventions
 
