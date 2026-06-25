@@ -5,6 +5,19 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Printable per-session review page** — new read-only `/interview/{id}/review`
+  server route lays out the full transcript + feedback for reading or saving as
+  PDF. It reuses `buildInterviewState(id)` and enforces the same ownership guard
+  as the export route (owner-only when auth is configured, open when it isn't,
+  `notFound()` otherwise). The transcript renders as flat speaker-labelled blocks
+  (candidate answers get an accent left-border) instead of chat bubbles, with a
+  summary header (level/framework/date/question count/score) and the three
+  feedback sections. A client `PrintButton` calls `window.print()`; new `@media
+  print` rules in `globals.css` drop the app header/footer and any `.no-print`
+  chrome and force the `.print-area` to black-on-white cards. Inline ⬇ MD / ⬇
+  JSON links reuse the export route. Entry points: a "🖨 Printable review" link in
+  the live feedback report and a **Review** chip on each `/history` row.
+  _(iteration 12)_
 - **Keyboard nav for landing choosers** — the methodology list and the level bar
   on `/` are now proper WAI-ARIA radiogroups instead of `aria-pressed` button
   grids. New reusable `src/components/RadioGroup.tsx` implements the roving-tabindex
@@ -95,12 +108,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Per-session review page** — a read-only `/interview/{id}` already resumes;
-   consider a dedicated printable summary view that embeds the export inline.
+1. **Mobile layout polish pass** — chips wrap cleanly, composer reachable above
+   the keyboard, safe-area insets on the fixed header/footer.
 
 ## Backlog (ideas)
 
-- Mobile layout polish pass (chips wrap, composer reachable, safe-area insets).
 - Per-question timer / pacing indicator.
 - "Retry this answer" before moving on.
 - Difficulty/level mismatch warning if the deck had to widen far from target.

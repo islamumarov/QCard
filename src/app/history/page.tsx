@@ -124,6 +124,14 @@ export default async function HistoryPage() {
               </Link>
               <div className="flex flex-col items-stretch justify-center gap-1">
                 <div className="flex gap-1">
+                  <Link
+                    href={`/interview/${s.id}/review`}
+                    className="chip text-xs hover:bg-surface-2"
+                    title="Printable review"
+                    aria-label={`Open printable review of ${level.shortLabel} ${methodology.name} interview`}
+                  >
+                    Review
+                  </Link>
                   <a
                     href={`/api/session/${s.id}/export?format=md`}
                     download

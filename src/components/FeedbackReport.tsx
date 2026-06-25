@@ -55,6 +55,9 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
             >
               ⬇ JSON
             </button>
+            <a href={`/interview/${state.sessionId}/review`} className="btn-ghost text-sm">
+              🖨 Printable review
+            </a>
           </div>
         </div>
       )}
