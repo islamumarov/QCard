@@ -5,6 +5,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Skipped count in the Markdown export header** — `buildMarkdown` now emits a
+  `- **⏭ Skipped:** N question(s)` bullet in the header block (after Questions)
+  whenever `state.skippedCount > 0`, with singular/plural wording, for parity with
+  the on-screen feedback/history chips and the printable review page. JSON export
+  already carried `skippedCount`. _(iteration 20)_
 - **Pacing + skipped chip on the printable review page** — the read-only
   `/interview/{id}/review` route now mirrors the live `FeedbackReport` for a
   complete saved/printed record. A new **Pacing** `deck-card` section (local
@@ -183,16 +188,14 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Skipped + pacing in the Markdown/JSON export header** — the `## Pacing` block
-   already lands in the MD export, but the skipped count isn't surfaced in the MD
-   header (or as a JSON top-level field beyond `skippedCount`); add a one-line
-   "⏭ N skipped" note to the Markdown header for parity with the on-screen reports.
-2. **Rate-limit / abuse guard on the API routes** — the answer/feedback/session
+1. **Rate-limit / abuse guard on the API routes** — the answer/feedback/session
    routes have no throttle; add a lightweight per-IP (or per-session) limiter so
    the LLM endpoints can't be hammered.
-3. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
+2. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
    core deck/level logic is untested; add a tsx/node test harness for the pure
    functions in `levels.ts`/`questions.ts`/`methodologies.ts`.
+3. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
+   field; consider whether a flattened summary (avg/total) helps consumers.
 
 ## Backlog (ideas)
 

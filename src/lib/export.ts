@@ -25,6 +25,9 @@ export function buildMarkdown(state: InterviewState): string {
   lines.push(`- **Target level:** ${state.level.name}`);
   lines.push(`- **Framework:** ${state.methodology.name} (${state.methodology.steps.join(" → ")})`);
   lines.push(`- **Questions:** ${state.mainQuestionCount}`);
+  if (state.skippedCount > 0) {
+    lines.push(`- **⏭ Skipped:** ${state.skippedCount} question${state.skippedCount === 1 ? "" : "s"}`);
+  }
   lines.push("");
 
   lines.push("## Transcript");
