@@ -68,7 +68,7 @@ function HomeContent() {
         </div>
         <h1 className="text-3xl font-bold tracking-tight">Behavioral Interview, gamified</h1>
         <p className="mx-auto mt-3 max-w-md text-muted">
-          Draw a random card. Answer out loud — we listen. Claude plays the interviewer: it probes with real
+          Draw a random card. Answer out loud — we listen. AI plays the interviewer: it probes with real
           follow-ups, then after 5 questions delivers a full feedback report on what was strong and what to improve.
         </p>
 
