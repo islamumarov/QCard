@@ -5,6 +5,20 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Rate-limit / abuse guard on the API routes** — the LLM-backed endpoints had
+  no throttle. New `src/lib/ratelimit.ts` is a dependency-free in-memory
+  fixed-window limiter: `enforceRateLimit(req, name, { limit, windowMs? })`
+  buckets per-IP (first hop of `x-forwarded-for`, then `x-real-ip`, then a shared
+  `unknown` key) and returns a 429 `NextResponse` with a `Retry-After` header
+  when over the window, else `null`. Buckets live in a `Map` capped at 10k
+  entries (expired windows are swept before insert past the cap). Gracefully
+  optional like the LLM-key/auth pattern: `RATE_LIMIT_DISABLED=1` turns it off
+  (documented in `.env.local.example`). Wired into every mutating LLM/proxy
+  route at the top of the handler: `/api/session` (10/min — heaviest, builds a
+  deck), `/api/answer` + `/api/answer/retry` + `/api/answer/skip` (30/min,
+  sharing the `answer` bucket), `/api/feedback` (10/min), `/api/tts` (60/min).
+  Read-only GETs (`/api/session/[id]`, export, provider, auth, tts GET probe) are
+  left open. _(iteration 22)_
 - **AI improvement advice in the feedback report** — beyond strengths/improvements/
   expectations, the final report now carries an actionable "how to fix what went
   wrong" section. New optional `advice?: string[]` on `Feedback` (and nullable
@@ -214,15 +228,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
    the LLM to generate targeted "here's what you got better at / what slipped /
    what to focus on next" advice. New route (e.g. `/compare`) + an API endpoint
    that calls the configured provider (gracefully degrades when no LLM key).
-3. **Rate-limit / abuse guard on the API routes** — the answer/feedback/session
-   routes have no throttle; add a lightweight per-IP (or per-session) limiter so
-   the LLM endpoints can't be hammered.
-4. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
+3. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
    core deck/level logic is untested; add a tsx/node test harness for the pure
    functions in `levels.ts`/`questions.ts`/`methodologies.ts`.
-5. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
+4. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
    field; consider whether a flattened summary (avg/total) helps consumers.
-6. **"Practice this advice" CTA** — link each `advice` item back into a fresh
+5. **"Practice this advice" CTA** — link each `advice` item back into a fresh
    session pre-filtered to the weak category/level so the candidate can drill it
    immediately, closing the feedback→practice loop.
 
@@ -231,9 +242,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 - Per-question timer / pacing indicator.
 - "Retry this answer" before moving on.
 - Difficulty/level mismatch warning if the deck had to widen far from target.
-- Rate-limit / abuse guard on the API routes.
 - Unit tests for `pickQuestionsForLevel`, `levelBand`, methodology/level prompt builders.
 - Analytics: aggregate ratings over time per level/framework.
+- Surface a friendly "slow down" toast in the client when an API call returns
+  429 (read the `Retry-After` header), instead of the generic error path.
 
 ## Conventions
 

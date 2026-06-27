@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addMessage, getActiveSessionQuestion, getQuestion, getSession, skipQuestion } from "@/lib/db";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { buildInterviewState } from "@/lib/state";
 
 export const runtime = "nodejs";
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
 // who would rather not attempt it. Records a "skip" marker, then either reveals
 // the next card or finishes the interview. Returns the updated interview state.
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "answer", { limit: 30 });
+  if (limited) return limited;
+
   try {
     const { sessionId } = (await req.json()) as { sessionId?: string };
     if (!sessionId) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/ratelimit";
 
 // Kokoro-FastAPI text-to-speech proxy (https://github.com/remsky/Kokoro-FastAPI).
 // Exposes an OpenAI-compatible /v1/audio/speech endpoint. Browser Web Speech
@@ -19,6 +20,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  // TTS lines fire per interviewer turn; a generous window covers normal use
+  // while still capping a runaway client.
+  const limited = enforceRateLimit(req, "tts", { limit: 60 });
+  if (limited) return limited;
+
   let text: string | undefined;
   try {
     ({ text } = (await req.json()) as { text?: string });

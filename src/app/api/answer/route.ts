@@ -9,6 +9,7 @@ import {
   getSession,
   incrementFollowups,
 } from "@/lib/db";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { buildInterviewState } from "@/lib/state";
 
 export const runtime = "nodejs";
@@ -18,6 +19,9 @@ export const dynamic = "force-dynamic";
 // Records the candidate's answer, asks the LLM for the interviewer's next move,
 // and either appends a follow-up or advances to the next card.
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "answer", { limit: 30 });
+  if (limited) return limited;
+
   try {
     const { sessionId, content } = (await req.json()) as { sessionId?: string; content?: string };
     if (!sessionId || !content?.trim()) {

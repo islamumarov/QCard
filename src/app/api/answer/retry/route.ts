@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession, retryLastAnswer } from "@/lib/db";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { buildInterviewState } from "@/lib/state";
 
 export const runtime = "nodejs";
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
 // for the current question, so they can redo it before moving on. Returns the
 // updated interview state plus `restoredAnswer` to repopulate the composer.
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "answer", { limit: 30 });
+  if (limited) return limited;
+
   try {
     const { sessionId } = (await req.json()) as { sessionId?: string };
     if (!sessionId) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateFeedback } from "@/lib/llm";
 import { addMessage, completeSession, getFeedback, getMessages, getSession, saveFeedback } from "@/lib/db";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { buildInterviewState } from "@/lib/state";
 
 export const runtime = "nodejs";
@@ -9,6 +10,9 @@ export const dynamic = "force-dynamic";
 // POST /api/feedback  { sessionId }
 // Generates and persists final feedback once all main questions are answered.
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "feedback", { limit: 10 });
+  if (limited) return limited;
+
   try {
     const { sessionId } = (await req.json()) as { sessionId?: string };
     if (!sessionId) return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
