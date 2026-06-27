@@ -1,7 +1,28 @@
 // Build downloadable transcript + feedback exports from an interview's state.
 // Pure string builders (testable) plus a browser-only download helper.
 
-import type { InterviewState, Turn } from "@/lib/types";
+import type { InterviewState, Pacing, Turn } from "@/lib/types";
+
+// Flattened pacing roll-up for export consumers: how many questions were timed,
+// the total, the average, and the slowest single question. null when no pacing.
+export interface PacingSummary {
+  questions: number;
+  totalSeconds: number;
+  averageSeconds: number; // rounded; mean over timed questions
+  slowest: { position: number; category: string; seconds: number } | null;
+}
+
+export function pacingSummary(pacing: Pacing | null): PacingSummary | null {
+  if (!pacing || pacing.perQuestion.length === 0) return null;
+  const questions = pacing.perQuestion.length;
+  const slowest = pacing.perQuestion.reduce((a, b) => (b.seconds > a.seconds ? b : a));
+  return {
+    questions,
+    totalSeconds: pacing.totalSeconds,
+    averageSeconds: Math.round(pacing.totalSeconds / questions),
+    slowest: { position: slowest.position, category: slowest.category, seconds: slowest.seconds },
+  };
+}
 
 const ROLE_LABEL: Record<Turn["kind"], string> = {
   intro: "Interviewer",
@@ -45,6 +66,10 @@ export function buildMarkdown(state: InterviewState): string {
       lines.push(`- **Q${p.position} · ${p.category}:** ${fmt(p.seconds)}`);
     }
     lines.push(`- **Total:** ${fmt(state.pacing.totalSeconds)}`);
+    const sum = pacingSummary(state.pacing);
+    if (sum) {
+      lines.push(`- **Average / question:** ${fmt(sum.averageSeconds)} (${sum.questions} timed)`);
+    }
     lines.push("");
   }
 
@@ -80,6 +105,7 @@ export function buildJSON(state: InterviewState): string {
     mainQuestionCount: state.mainQuestionCount,
     transcript: state.transcript.map((t) => ({ role: t.role, kind: t.kind, content: t.content })),
     pacing: state.pacing,
+    pacingSummary: pacingSummary(state.pacing),
     skippedCount: state.skippedCount,
     feedback: state.feedback,
   };

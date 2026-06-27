@@ -5,6 +5,16 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Flattened pacing summary in exports** — exports now carry a roll-up so
+  consumers don't have to re-derive timing from `perQuestion`. New pure,
+  testable `pacingSummary(pacing)` in `src/lib/export.ts` returns
+  `{ questions, totalSeconds, averageSeconds, slowest }` (or `null` when nothing
+  was timed); `averageSeconds` is the rounded mean and `slowest` flags the
+  single longest question (position · category · seconds). `buildJSON` emits it
+  as a top-level `pacingSummary` field beside the existing `pacing`; the Markdown
+  `## Pacing` block gains an **Average / question** line under the total. Two new
+  tests in `tests/lib.test.ts` (null cases + the count/avg/slowest roll-up). No
+  new deps, no schema/LLM changes. _(iteration 30)_
 - **"Practice again" CTA (feedback → practice loop)** — the final feedback report
   now offers a **🔁 Practice again — same level & framework** button that deep-links
   back to `/` with the just-finished session's slice pre-selected, so a candidate
@@ -307,12 +317,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
-   field; consider whether a flattened summary (avg/total) helps consumers.
-2. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
+1. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
    latest session against the user's highest-rated one, or chart all sessions of a
    given level/framework. Builds directly on `src/lib/compare.ts`.
-3. **Focus-aware practice** — go beyond replaying the same slice: thread an
+2. **Focus-aware practice** — go beyond replaying the same slice: thread an
    optional `focus` (a weak `advice` item or category) through `/api/session` →
    prompts so the interviewer emphasises the candidate's gap on the next run.
    Builds on the new `?level=&framework=` deep-link plumbing.

@@ -28,6 +28,7 @@ import {
 } from "../src/lib/methodologies";
 import { pickQuestionsForLevel } from "../src/lib/db";
 import { interviewerSystem, feedbackSystem } from "../src/lib/llm/prompts";
+import { pacingSummary } from "../src/lib/export";
 
 // ---- levelBand -----------------------------------------------------------
 
@@ -177,4 +178,25 @@ test("pickQuestionsForLevel caps at the available pool when N exceeds it", () =>
   ins.run("B", "only question two");
   const picked = pickQuestionsForLevel(db, 5, 4);
   assert.equal(picked.length, 2);
+});
+
+test("pacingSummary is null without timed questions", () => {
+  assert.equal(pacingSummary(null), null);
+  assert.equal(pacingSummary({ perQuestion: [], totalSeconds: 0 }), null);
+});
+
+test("pacingSummary rolls up count, average, and slowest question", () => {
+  const sum = pacingSummary({
+    perQuestion: [
+      { position: 1, category: "Ownership", seconds: 60 },
+      { position: 2, category: "Conflict", seconds: 180 },
+      { position: 3, category: "Ambiguity", seconds: 30 },
+    ],
+    totalSeconds: 270,
+  });
+  assert.ok(sum);
+  assert.equal(sum.questions, 3);
+  assert.equal(sum.totalSeconds, 270);
+  assert.equal(sum.averageSeconds, 90);
+  assert.deepEqual(sum.slowest, { position: 2, category: "Conflict", seconds: 180 });
 });
