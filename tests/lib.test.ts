@@ -27,7 +27,7 @@ import {
   METHODOLOGIES,
 } from "../src/lib/methodologies";
 import { pickQuestionsForLevel } from "../src/lib/db";
-import { interviewerSystem, feedbackSystem } from "../src/lib/llm/prompts";
+import { interviewerSystem, feedbackSystem, normalizeFocus, MAX_FOCUS_LEN } from "../src/lib/llm/prompts";
 import { pacingSummary } from "../src/lib/export";
 import { pickBestAndLatest } from "../src/lib/compare";
 
@@ -116,6 +116,34 @@ test("feedbackSystem weaves in the framework and the feedback calibration", () =
   assert.ok(out.includes(LEVELS.L6.title));
   assert.ok(out.includes(LEVELS.L6.feedbackCalibration));
   assert.ok(out.includes("advice"));
+});
+
+test("normalizeFocus trims, drops empties, caps length, and rejects non-strings", () => {
+  assert.equal(normalizeFocus("  quantify impact  "), "quantify impact");
+  assert.equal(normalizeFocus("   "), null);
+  assert.equal(normalizeFocus(""), null);
+  assert.equal(normalizeFocus(undefined), null);
+  assert.equal(normalizeFocus(42), null);
+  assert.equal(normalizeFocus("x".repeat(MAX_FOCUS_LEN + 50)).length, MAX_FOCUS_LEN);
+});
+
+test("interviewerSystem injects the focus only when one is given", () => {
+  const focus = "Lead with the measurable outcome";
+  const withFocus = interviewerSystem(METHODOLOGIES.star, LEVELS.L5, focus);
+  assert.ok(withFocus.includes(focus));
+  assert.match(withFocus, /practising a specific weakness/);
+  // unfocused build is unchanged (no focus block)
+  const plain = interviewerSystem(METHODOLOGIES.star, LEVELS.L5);
+  assert.ok(!plain.includes("practising a specific weakness"));
+});
+
+test("feedbackSystem injects the focus only when one is given", () => {
+  const focus = "Clarify personal ownership vs the team";
+  const withFocus = feedbackSystem(METHODOLOGIES.carl, LEVELS.L6, focus);
+  assert.ok(withFocus.includes(focus));
+  assert.match(withFocus, /deliberately work on a specific weakness/);
+  const plain = feedbackSystem(METHODOLOGIES.carl, LEVELS.L6);
+  assert.ok(!plain.includes("deliberately work on a specific weakness"));
 });
 
 // ---- pickQuestionsForLevel (in-memory DB) --------------------------------

@@ -17,10 +17,14 @@ function HomeContent() {
   const initMethodology: MethodologyId = isMethodologyId(params.get("framework"))
     ? (params.get("framework") as MethodologyId)
     : DEFAULT_METHODOLOGY;
+  // Optional ?focus= carries a weakness to drill (deep-linked from a feedback
+  // advice/improvement item); trimmed + capped, sent through to the interviewer.
+  const initFocus = (params.get("focus") ?? "").trim().slice(0, 280);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methodology, setMethodology] = useState<MethodologyId>(initMethodology);
   const [level, setLevel] = useState<LevelId>(initLevel);
+  const [focus, setFocus] = useState<string>(initFocus);
   // null = still checking; the Start button stays disabled until we confirm a key is set.
   const [llmReady, setLlmReady] = useState<boolean | null>(null);
 
@@ -42,7 +46,7 @@ function HomeContent() {
       const res = await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ methodology, level }),
+        body: JSON.stringify({ methodology, level, focus: focus.trim() || undefined }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -145,6 +149,27 @@ function HomeContent() {
               </div>
             );
           })()}
+        </div>
+
+        {/* optional focus — a weakness to drill this run; deep-linked from feedback */}
+        <div className="mt-7 text-left">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
+            Focus this run <span className="font-normal normal-case text-subtle">— optional</span>
+          </h2>
+          <input
+            type="text"
+            value={focus}
+            maxLength={280}
+            onChange={(e) => setFocus(e.target.value)}
+            placeholder="e.g. Quantify impact with metrics"
+            aria-label="Optional weakness to focus on this run"
+            className="w-full rounded-xl border border-edge bg-surface px-3 py-2 text-sm text-fg placeholder:text-subtle focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+          <p className="mt-1.5 text-xs text-muted">
+            {focus.trim()
+              ? "The interviewer will probe this gap and the coach will call out whether you improved on it."
+              : "Name a gap (from past feedback) to make the interviewer lean into it."}
+          </p>
         </div>
 
         <ul className="mx-auto mt-6 grid max-w-sm gap-2 text-left text-sm text-muted">

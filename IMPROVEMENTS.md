@@ -5,6 +5,23 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Focus-aware practice** — a candidate can now drill a specific weakness: an
+  optional `focus` string threads from the home page through `/api/session` into
+  both the interviewer and coach prompts so the next run leans into that gap. New
+  `focus` column on `sessions` (additive `ensureColumn` migration, nullable;
+  `SessionRow.focus`), passed through `createSession(...,  focus)`. New pure
+  `normalizeFocus(raw)` + `MAX_FOCUS_LEN` (280) in `prompts.ts` trim/empty→null/
+  length-cap the value; `interviewerSystem`/`feedbackSystem` gained an optional
+  `focus` arg that appends a focus block only when set (interviewer leans probes
+  toward the gap; coach must say whether the candidate improved on it and make ≥1
+  advice item about it). `analyzeAnswer` (via `AnalyzeParams.focus`) and
+  `generateFeedback(..., focus)` carry `session.focus` from the answer + feedback
+  routes. The session route reads/sanitises `body.focus`. Two entry points: an
+  optional **Focus this run** text input on `/` (pre-filled from `?focus=`), and a
+  **🎯 Drill this →** link on each feedback *advice* item that deep-links
+  `/?level=&framework=&focus=<item>` (builds on the existing `?level=&framework=`
+  plumbing). Five new tests (`normalizeFocus` cases + focus injected-only-when-set
+  for both prompts). No new deps, no LLM-key/auth changes. _(iteration 32)_
 - **"Latest vs. your best" quick-compare** — `/compare` now offers a one-click
   **⚡ Latest vs. your best** chip beside the Compare button that deep-links
   straight into the existing picker (`?a=best&b=latest`) so the comparison
@@ -329,13 +346,13 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Focus-aware practice** — go beyond replaying the same slice: thread an
-   optional `focus` (a weak `advice` item or category) through `/api/session` →
-   prompts so the interviewer emphasises the candidate's gap on the next run.
-   Builds on the new `?level=&framework=` deep-link plumbing.
-2. **Multi-session chart on `/compare`** — beyond two-at-a-time, chart all runs
+1. **Multi-session chart on `/compare`** — beyond two-at-a-time, chart all runs
    of a chosen level/framework over time (reuse `RatingTrend`'s pure-SVG plot,
    filtered like `/history`). The other half of the old "compare more than two".
+2. **Surface the run's focus in state/exports** — `InterviewState`/`buildInterviewState`
+   don't carry `session.focus`, so the feedback report can't show a "🎯 You drilled:
+   …" chip and the MD/JSON exports omit it. Thread `focus` into the state and render
+   a header chip + an export line, closing the loop on focus-aware practice.
 
 ## Backlog (ideas)
 

@@ -38,6 +38,9 @@ export interface SessionRow {
   current_main_index: number;
   methodology: MethodologyId;
   level: LevelId;
+  // Optional gap the candidate chose to drill this run (a weak advice item or a
+  // category), woven into the interviewer + coach prompts. Null when unfocused.
+  focus: string | null;
 }
 
 export interface SessionQuestionRow {

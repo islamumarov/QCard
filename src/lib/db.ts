@@ -146,7 +146,8 @@ function migrate(db: Database.Database) {
       main_question_count INTEGER NOT NULL,
       current_main_index  INTEGER NOT NULL DEFAULT 0,
       methodology         TEXT NOT NULL DEFAULT 'star',
-      level               TEXT NOT NULL DEFAULT 'L4'
+      level               TEXT NOT NULL DEFAULT 'L4',
+      focus               TEXT
     );
 
     CREATE TABLE IF NOT EXISTS session_questions (
@@ -189,6 +190,7 @@ function migrate(db: Database.Database) {
   ensureColumn(db, "questions", "level_max", "INTEGER NOT NULL DEFAULT 7");
   ensureColumn(db, "sessions", "level", "TEXT NOT NULL DEFAULT 'L4'");
   ensureColumn(db, "sessions", "user_id", "TEXT");
+  ensureColumn(db, "sessions", "focus", "TEXT");
   ensureColumn(db, "feedbacks", "advice", "TEXT");
 }
 
@@ -296,6 +298,7 @@ export function createSession(
   methodology: MethodologyId = DEFAULT_METHODOLOGY,
   level: LevelId = DEFAULT_LEVEL,
   userId: string | null = null,
+  focus: string | null = null,
 ): SessionRow {
   const db = getDb();
   const id = randomUUID();
@@ -303,8 +306,8 @@ export function createSession(
 
   const tx = db.transaction(() => {
     db.prepare(
-      "INSERT INTO sessions (id, user_id, created_at, status, main_question_count, current_main_index, methodology, level) VALUES (?, ?, ?, 'in_progress', ?, 0, ?, ?)",
-    ).run(id, userId, now(), MAIN_QUESTIONS, methodology, level);
+      "INSERT INTO sessions (id, user_id, created_at, status, main_question_count, current_main_index, methodology, level, focus) VALUES (?, ?, ?, 'in_progress', ?, 0, ?, ?, ?)",
+    ).run(id, userId, now(), MAIN_QUESTIONS, methodology, level, focus);
 
     const insertSQ = db.prepare(
       "INSERT INTO session_questions (session_id, question_id, position, status) VALUES (?, ?, ?, ?)",

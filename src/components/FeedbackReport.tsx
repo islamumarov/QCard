@@ -18,6 +18,34 @@ function List({ title, items, tone }: { title: string; items: string[]; tone: "g
   );
 }
 
+// The "How to improve next time" advice list, but each item carries a "Drill
+// this" link that starts a fresh interview at the same slice with that exact
+// weakness threaded into the interviewer + coach prompts (?focus=).
+function AdviceWithDrill({ items, state }: { items: string[]; state: InterviewState }) {
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">How to improve next time</h3>
+      <ul className="space-y-3">
+        {items.map((it, i) => (
+          <li key={i} className="flex gap-2 text-sm text-fg">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="min-w-0">
+              {it}
+              <a
+                href={`/?level=${state.level.id}&framework=${state.methodology.id}&focus=${encodeURIComponent(it)}`}
+                className="ml-2 inline-block whitespace-nowrap text-xs font-semibold text-accent hover:underline"
+                title="Start a fresh interview that drills this specific gap"
+              >
+                🎯 Drill this →
+              </a>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // M:SS for a duration in seconds.
 function fmtDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -89,7 +117,11 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
 
       {feedback.advice && feedback.advice.length > 0 && (
         <div className="mt-6 rounded-xl border border-accent/30 bg-accent/5 p-4">
-          <List title="How to improve next time" items={feedback.advice} tone="accent" />
+          {state ? (
+            <AdviceWithDrill items={feedback.advice} state={state} />
+          ) : (
+            <List title="How to improve next time" items={feedback.advice} tone="accent" />
+          )}
         </div>
       )}
 

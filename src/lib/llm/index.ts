@@ -54,7 +54,7 @@ export const llmEnabled = (): boolean => getProvider().enabled;
 
 // ---- analyze a candidate answer -> follow-up or move on ----
 
-export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMain, methodology, level }: AnalyzeParams): Promise<AnswerAnalysis> {
+export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMain, methodology, level, focus }: AnalyzeParams): Promise<AnswerAnalysis> {
   const provider = getProvider();
   const reachedLimit = followupsAsked >= MAX_FOLLOWUPS;
 
@@ -73,7 +73,7 @@ export async function analyzeAnswer({ questionMessages, followupsAsked, isLastMa
 
   try {
     const parsed = (await provider.generateJSON({
-      system: interviewerSystem(getMethodology(methodology), getLevel(level)),
+      system: interviewerSystem(getMethodology(methodology), getLevel(level), focus ?? null),
       user,
       schema: "analysis",
       maxTokens: 2048,
@@ -95,6 +95,7 @@ export async function generateFeedback(
   allMessages: MessageRow[],
   methodology: MethodologyId,
   level: LevelId,
+  focus: string | null = null,
 ): Promise<Feedback> {
   const provider = getProvider();
   const m = getMethodology(methodology);
@@ -106,7 +107,7 @@ export async function generateFeedback(
 
   try {
     const parsed = (await provider.generateJSON({
-      system: feedbackSystem(m, lvl),
+      system: feedbackSystem(m, lvl, focus),
       user: `Full interview transcript:\n\n${transcript}\n\nProduce the structured feedback.`,
       schema: "feedback",
       maxTokens: 3072,

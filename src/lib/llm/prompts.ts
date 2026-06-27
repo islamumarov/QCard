@@ -6,9 +6,28 @@ import type { Feedback, MessageRow } from "../types";
 
 export const MAX_FOLLOWUPS = Number(process.env.QCARD_MAX_FOLLOWUPS || 2);
 
+// Longest focus string we weave into a prompt — keeps a pasted advice item from
+// ballooning the system prompt. Empty/whitespace-only focus is treated as none.
+export const MAX_FOCUS_LEN = 280;
+
+// Normalize a candidate-supplied focus: trim, collapse to null when empty, and
+// cap the length so it can't bloat the prompt. Shared by the API + prompt layers.
+export function normalizeFocus(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, MAX_FOCUS_LEN);
+}
+
 // The interviewer's system prompt, specialized to the chosen answer framework
-// (the STRUCTURE) and the target SWE level (the BAR).
-export function interviewerSystem(m: Methodology, lvl: Level): string {
+// (the STRUCTURE) and the target SWE level (the BAR), optionally biased toward a
+// gap the candidate chose to drill this run (the FOCUS).
+export function interviewerSystem(m: Methodology, lvl: Level, focus: string | null = null): string {
+  const focusBlock = focus
+    ? `\n\nThis candidate is deliberately practising a specific weakness this run:
+"${focus}"
+Lean your probing toward that gap — favour follow-ups that pull on it — while still covering the question and the ${lvl.shortLabel} bar. Do not announce that you are focusing on it.`
+    : "";
   return `You are a seasoned, warm-but-rigorous behavioral interviewer at a top tech company.
 You conduct realistic behavioral interviews. The candidate has chosen to structure their answers with the ${m.name} framework (${m.expansion}).
 
@@ -35,13 +54,19 @@ Rules:
 - Calibrate to the level: do NOT down-level by ignoring above-bar signals, and do NOT over-level by demanding scope or influence beyond ${lvl.shortLabel}. Probe to the ${lvl.shortLabel} bar, no higher.
 - Do NOT ask more than necessary. If the answer already covers the ${m.name} components clearly and already meets the ${lvl.shortLabel} bar, move on.
 - When moving on, give a brief, natural acknowledgement (do not include the next question — the system provides it).
-- Never break character, never mention the level or framework by name unless it feels natural, never mention that you are an AI or that this is structured output.`;
+- Never break character, never mention the level or framework by name unless it feels natural, never mention that you are an AI or that this is structured output.${focusBlock}`;
 }
 
 // The feedback coach's system prompt, specialized to the framework (STRUCTURE)
-// and the target SWE level (the BAR).
-export function feedbackSystem(m: Methodology, lvl: Level): string {
-  return `You are an expert interview coach. The candidate answered using the ${m.name} framework (${m.expansion}) and is being evaluated against the bar for ${lvl.title}.
+// and the target SWE level (the BAR), optionally aware that the candidate was
+// deliberately drilling a gap this run (the FOCUS).
+export function feedbackSystem(m: Methodology, lvl: Level, focus: string | null = null): string {
+  const focusBlock = focus
+    ? `\n\nThe candidate ran this interview to deliberately work on a specific weakness:
+"${focus}"
+In your feedback, call out directly whether they improved on that gap this time, and make at least one "advice" item a concrete next step on it.`
+    : "";
+  return `You are an expert interview coach. The candidate answered using the ${m.name} framework (${m.expansion}) and is being evaluated against the bar for ${lvl.title}.${focusBlock}
 You are given the full transcript of a behavioral interview (several main questions with follow-ups and the candidate's answers).
 
 Evaluate how well each answer applied the ${m.name} framework (this is the STRUCTURE):

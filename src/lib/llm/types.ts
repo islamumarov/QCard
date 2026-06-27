@@ -24,4 +24,5 @@ export interface AnalyzeParams {
   isLastMain: boolean; // if true and we move on, the interview ends after this
   methodology: MethodologyId; // the answer framework chosen for this session
   level: LevelId; // the target SWE level (the bar)
+  focus?: string | null; // optional gap the candidate is drilling this run
 }

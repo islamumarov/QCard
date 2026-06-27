@@ -47,6 +47,7 @@ export async function POST(req: Request) {
       isLastMain,
       methodology: session.methodology,
       level: session.level,
+      focus: session.focus,
     });
 
     if (analysis.action === "followup") {
