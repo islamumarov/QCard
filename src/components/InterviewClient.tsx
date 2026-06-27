@@ -86,10 +86,11 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId }),
         });
+        if (!res.ok) throw new Error(await messageForFailedResponse(res, "Failed to generate feedback"));
         const data = (await res.json()) as InterviewState;
         setState(data);
-      } catch {
-        setError("Failed to generate feedback");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to generate feedback");
         feedbackRequested.current = false;
       } finally {
         setBusy(false);
@@ -110,10 +111,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, content }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to submit answer");
-      }
+      if (!res.ok) throw new Error(await messageForFailedResponse(res, "Failed to submit answer"));
       const data = (await res.json()) as InterviewState;
       setState(data);
       setAnswer("");
@@ -137,10 +135,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to retry");
-      }
+      if (!res.ok) throw new Error(await messageForFailedResponse(res, "Failed to retry"));
       const data = (await res.json()) as InterviewState & { restoredAnswer?: string };
       setState(data);
       setAnswer(data.restoredAnswer ?? "");
@@ -165,10 +160,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to skip");
-      }
+      if (!res.ok) throw new Error(await messageForFailedResponse(res, "Failed to skip"));
       const data = (await res.json()) as InterviewState;
       setState(data);
       setAnswer("");
@@ -397,6 +389,22 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
       )}
     </div>
   );
+}
+
+// Turn a non-ok API response into a candidate-facing message. A 429 from the
+// rate limiter gets a friendly "slow down" line that honours the Retry-After
+// header instead of the generic failure text.
+async function messageForFailedResponse(res: Response, fallback: string): Promise<string> {
+  if (res.status === 429) {
+    const retry = Number(res.headers.get("Retry-After"));
+    const wait =
+      Number.isFinite(retry) && retry > 0
+        ? ` Try again in ${retry === 1 ? "a second" : `${retry} seconds`}.`
+        : " Give it a moment and try again.";
+    return `Slow down a touch — too many requests in a short time.${wait}`;
+  }
+  const err = (await res.json().catch(() => ({}))) as { error?: string };
+  return err.error || fallback;
 }
 
 function formatElapsed(seconds: number): string {

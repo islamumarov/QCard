@@ -5,6 +5,17 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Friendly 429 "slow down" message in the interview client** — when a mutating
+  LLM route returns 429 from the per-IP rate limiter, the candidate now sees a
+  human message instead of the generic failure text. New
+  `messageForFailedResponse(res, fallback)` helper in `InterviewClient.tsx`
+  reads the `Retry-After` header on a 429 and renders "Slow down a touch — too
+  many requests in a short time. Try again in N seconds." (singular-aware, with
+  a "give it a moment" fallback when the header is missing/zero); for any other
+  non-ok status it falls back to the parsed `err.error` then the caller's
+  default. Wired into all four POST fetches — `/api/answer`, `/api/answer/retry`,
+  `/api/answer/skip`, and `/api/feedback` (which now also checks `res.ok`
+  before parsing). _(iteration 23)_
 - **Rate-limit / abuse guard on the API routes** — the LLM-backed endpoints had
   no throttle. New `src/lib/ratelimit.ts` is a dependency-free in-memory
   fixed-window limiter: `enforceRateLimit(req, name, { limit, windowMs? })`
@@ -244,8 +255,8 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 - Difficulty/level mismatch warning if the deck had to widen far from target.
 - Unit tests for `pickQuestionsForLevel`, `levelBand`, methodology/level prompt builders.
 - Analytics: aggregate ratings over time per level/framework.
-- Surface a friendly "slow down" toast in the client when an API call returns
-  429 (read the `Retry-After` header), instead of the generic error path.
+- Auto-retry a 429 after the `Retry-After` window (with a countdown) instead of
+  asking the candidate to resubmit manually.
 
 ## Conventions
 
