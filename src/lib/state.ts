@@ -84,6 +84,7 @@ export function buildInterviewState(sessionId: string): InterviewState | null {
     transcript,
     pacing: buildPacing(sessionId, messages),
     skippedCount: messages.filter((msg) => msg.kind === "skip").length,
+    focus: session.focus,
     currentQuestion,
     feedback,
   };

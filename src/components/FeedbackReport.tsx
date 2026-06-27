@@ -90,6 +90,11 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
       <div className="mb-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold">Interview feedback</h2>
+          {state?.focus && (
+            <span className="chip text-xs text-accent" title={`You drilled: ${state.focus}`}>
+              🎯 Drilled: {state.focus}
+            </span>
+          )}
           {state && state.skippedCount > 0 && (
             <span
               className="chip text-xs text-amber-300"

@@ -46,6 +46,9 @@ export function buildMarkdown(state: InterviewState): string {
   lines.push(`- **Target level:** ${state.level.name}`);
   lines.push(`- **Framework:** ${state.methodology.name} (${state.methodology.steps.join(" → ")})`);
   lines.push(`- **Questions:** ${state.mainQuestionCount}`);
+  if (state.focus) {
+    lines.push(`- **🎯 Drilled:** ${state.focus}`);
+  }
   if (state.skippedCount > 0) {
     lines.push(`- **⏭ Skipped:** ${state.skippedCount} question${state.skippedCount === 1 ? "" : "s"}`);
   }
@@ -107,6 +110,7 @@ export function buildJSON(state: InterviewState): string {
     pacing: state.pacing,
     pacingSummary: pacingSummary(state.pacing),
     skippedCount: state.skippedCount,
+    focus: state.focus,
     feedback: state.feedback,
   };
   return JSON.stringify(payload, null, 2) + "\n";

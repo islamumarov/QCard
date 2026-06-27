@@ -28,7 +28,7 @@ import {
 } from "../src/lib/methodologies";
 import { pickQuestionsForLevel } from "../src/lib/db";
 import { interviewerSystem, feedbackSystem, normalizeFocus, MAX_FOCUS_LEN } from "../src/lib/llm/prompts";
-import { pacingSummary } from "../src/lib/export";
+import { pacingSummary, buildMarkdown, buildJSON } from "../src/lib/export";
 import { pickBestAndLatest } from "../src/lib/compare";
 
 // ---- levelBand -----------------------------------------------------------
@@ -261,4 +261,36 @@ test("pickBestAndLatest returns null when the best run is also the latest", () =
     ]),
     null,
   );
+});
+
+// Minimal InterviewState for the pure export builders — only the fields they read.
+function exportableState(focus) {
+  return {
+    sessionId: "abcdef123456",
+    status: "completed",
+    mainQuestionCount: 1,
+    currentMainIndex: 1,
+    awaiting: "done",
+    provider: { id: "anthropic", model: "x", enabled: true },
+    methodology: { id: "star", name: "STAR", expansion: "", steps: ["S", "T", "A", "R"] },
+    level: { id: "L5", name: "L5 — Senior", scopeBlurb: "" },
+    transcript: [],
+    pacing: null,
+    skippedCount: 0,
+    focus,
+    currentQuestion: null,
+    feedback: null,
+  };
+}
+
+test("buildMarkdown emits a Drilled line only when the run had a focus", () => {
+  const focused = buildMarkdown(exportableState("Lead with the outcome"));
+  assert.ok(focused.includes("**🎯 Drilled:** Lead with the outcome"));
+  const unfocused = buildMarkdown(exportableState(null));
+  assert.ok(!unfocused.includes("Drilled"));
+});
+
+test("buildJSON carries the run's focus", () => {
+  assert.equal(JSON.parse(buildJSON(exportableState("Quantify impact"))).focus, "Quantify impact");
+  assert.equal(JSON.parse(buildJSON(exportableState(null))).focus, null);
 });

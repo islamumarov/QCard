@@ -135,6 +135,7 @@ export interface InterviewState {
   transcript: Turn[];
   pacing: Pacing | null; // per-question timing, or null if nothing answered yet
   skippedCount: number; // number of questions the candidate skipped
+  focus: string | null; // the weakness drilled this run, or null if unfocused
   currentQuestion: {
     position: number;
     category: string;

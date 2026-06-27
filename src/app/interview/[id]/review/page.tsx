@@ -136,14 +136,21 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               {state.mainQuestionCount} {state.mainQuestionCount === 1 ? "question" : "questions"} ·{" "}
               <span className="font-mono">{stem}</span>
             </p>
-            {state.skippedCount > 0 && (
-              <span
-                className="chip mt-2 inline-flex text-xs text-amber-300"
-                title={`${state.skippedCount} question${state.skippedCount === 1 ? "" : "s"} skipped`}
-              >
-                ⏭ {state.skippedCount} skipped
-              </span>
-            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {state.focus && (
+                <span className="chip inline-flex text-xs text-accent" title={`You drilled: ${state.focus}`}>
+                  🎯 Drilled: {state.focus}
+                </span>
+              )}
+              {state.skippedCount > 0 && (
+                <span
+                  className="chip inline-flex text-xs text-amber-300"
+                  title={`${state.skippedCount} question${state.skippedCount === 1 ? "" : "s"} skipped`}
+                >
+                  ⏭ {state.skippedCount} skipped
+                </span>
+              )}
+            </div>
           </div>
           {fb && (
             <div className="flex shrink-0 items-baseline gap-1">

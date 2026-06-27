@@ -5,6 +5,15 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Surface the run's focus in state/exports** — closed the loop on focus-aware
+  practice: `InterviewState` now carries `focus: string \| null`, set in
+  `buildInterviewState` from `session.focus`. The feedback report and the
+  printable `/interview/{id}/review` page render a **🎯 Drilled: …** chip beside
+  the (existing) skipped chip when a focus was set; the Markdown export gains a
+  `- **🎯 Drilled:** …` header line and the JSON export a top-level `focus` field.
+  Two new tests (`buildMarkdown` emits the line only when focused; `buildJSON`
+  carries `focus`) via a minimal exportable-state helper. No new deps, no
+  schema/LLM changes. _(iteration 33)_
 - **Focus-aware practice** — a candidate can now drill a specific weakness: an
   optional `focus` string threads from the home page through `/api/session` into
   both the interviewer and coach prompts so the next run leans into that gap. New
@@ -349,10 +358,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 1. **Multi-session chart on `/compare`** — beyond two-at-a-time, chart all runs
    of a chosen level/framework over time (reuse `RatingTrend`'s pure-SVG plot,
    filtered like `/history`). The other half of the old "compare more than two".
-2. **Surface the run's focus in state/exports** — `InterviewState`/`buildInterviewState`
-   don't carry `session.focus`, so the feedback report can't show a "🎯 You drilled:
-   …" chip and the MD/JSON exports omit it. Thread `focus` into the state and render
-   a header chip + an export line, closing the loop on focus-aware practice.
+2. **Filter `/history` by focus** — focus runs are now distinguishable; let the
+   candidate filter the history list to just the runs where they drilled a
+   weakness (a "🎯 focused only" toggle), and show the focus text on each
+   focused row's badge line so a drill-and-retry streak is visible at a glance.
 
 ## Backlog (ideas)
 
