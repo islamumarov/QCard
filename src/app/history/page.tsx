@@ -48,6 +48,30 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Aggregate stats for the current (possibly filtered) slice: how many scored
+// runs, their average, and the best. Reuses the already-loaded feedback ratings
+// (no extra queries) so the candidate sees their standing at a glance — and,
+// with a filter applied, their standing within that level/framework slice.
+function StatBar({ ratings, active }: { ratings: number[]; active: boolean }) {
+  if (ratings.length === 0) return null;
+  const count = ratings.length;
+  const avg = ratings.reduce((a, r) => a + r, 0) / count;
+  const best = Math.max(...ratings);
+  const stat = (label: string, value: string, tint?: string) => (
+    <div className="flex flex-col">
+      <span className="text-[0.65rem] uppercase tracking-wide text-subtle">{label}</span>
+      <span className={`text-lg font-bold ${tint ?? ""}`}>{value}</span>
+    </div>
+  );
+  return (
+    <div className="deck-card flex flex-wrap items-center gap-6 p-4">
+      {stat(active ? "Scored (filtered)" : "Scored", String(count))}
+      {stat("Average", avg.toFixed(1), ratingClass(Math.round(avg)).split(" ").pop())}
+      {stat("Best", String(best), ratingClass(best).split(" ").pop())}
+    </div>
+  );
+}
+
 // A native GET-form filter so a candidate can isolate, e.g., just their L5 STAR
 // runs. No client JS — selects submit via the form's "Apply" button; "Clear"
 // is a plain link back to /history.
@@ -185,6 +209,10 @@ export default async function HistoryPage({
         </div>
       ) : (
         <>
+          <StatBar
+            ratings={trendPoints.map((p) => p.rating)}
+            active={levelFilter !== "" || frameworkFilter !== ""}
+          />
           <RatingTrend points={trendPoints} />
           <ul className="flex flex-col gap-3">
         {sessions.map((s) => {

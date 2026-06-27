@@ -5,6 +5,15 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Per-level/framework averages on `/history`** — a small stat row now sits atop
+  the history list showing **Scored · Average · Best** for the current slice,
+  reusing the already-loaded feedback ratings (the same `trendPoints` that feed
+  the sparkline) so there are no extra queries. New `StatBar` component renders
+  three labelled figures; with a level/framework filter applied the count label
+  reads "Scored (filtered)" so the candidate sees their standing *within* that
+  slice (e.g. average across just their L5 STAR runs). Average/best tint reuse the
+  `ratingClass` green/amber/rose bands (text colour only). Hidden when the slice
+  has no scored runs; no new deps, no client JS. _(iteration 28)_
 - **Filter `/history` by level & framework** — a native GET-form filter bar now
   sits atop the history page so a candidate can isolate, e.g., just their L5 STAR
   runs. New `FilterBar` (in `history/page.tsx`) renders two `<select>`s (Level
@@ -293,9 +302,6 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 3. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
    latest session against the user's highest-rated one, or chart all sessions of a
    given level/framework. Builds directly on `src/lib/compare.ts`.
-4. **Per-level/framework averages on `/history`** — now that the page can filter,
-   show a small stat row (count · avg rating · best) for the current filter slice,
-   reusing the already-loaded feedback. No new queries.
 
 ## Backlog (ideas)
 
