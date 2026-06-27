@@ -5,6 +5,25 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Compare two interviews (progress diff + AI advice)** — new `/compare` route
+  lets a signed-in user pick two of their *completed* interviews and see how they
+  progressed. Deterministic half lives in `src/lib/compare.ts` (`loadCompareSide`
+  reuses `buildInterviewState`; `orderByDate` puts them oldest→newest; `diffSides`
+  computes rating/pace/skipped deltas) and renders instantly server-side: two
+  side cards (rating · time · skipped) plus a signed delta row (green/rose by
+  whether the direction is good — up is good for rating, down for time/skips).
+  Qualitative half is on-demand: `CompareAdvice` (client) POSTs the two ids to
+  new `POST /api/compare`, which enforces ownership (auth-configured), requires
+  both finished, and calls `generateComparison` → a new `"comparison"` LLM schema
+  (`improved`/`regressed`/`focus`/`summary`) wired through `prompts.ts`,
+  `anthropic.ts`, `gemini.ts`, with a `fallbackComparison(ratingDelta)` offline
+  default. Pickers are a native GET form (no client JS); a **⇄ Compare** chip was
+  added to the `/history` header. Gracefully degrades like the rest of the app
+  (auth unconfigured / signed-out / <2 sessions / no LLM key). _(iteration 24)_
+- **Per-session detail/review view** — already shipped: `/interview/{id}/review`
+  is the consolidated read-only detail page (transcript + rating/strengths/
+  improvements/expectations/advice + pacing + skipped chip), owner-guarded, linked
+  from every `/history` row. Closed as done. _(folded into iterations 12/17/19)_
 - **Friendly 429 "slow down" message in the interview client** — when a mutating
   LLM route returns 429 from the per-IP rate limiter, the candidate now sees a
   human message instead of the generic failure text. New
@@ -227,26 +246,20 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Per-session history + feedback view** — let a signed-in user open a past
-   session and see its full saved transcript and feedback in one place (build on
-   `/history`, `buildInterviewState`, and the existing `/interview/{id}/review`
-   route). The detail view should surface the saved feedback (rating, strengths,
-   improvements, expectations) and pacing/skipped for that one session.
-2. **Compare two interviews (progress diff + AI advice)** — pick two of the
-   signed-in user's sessions (e.g. same level/framework, newest vs earlier) and
-   show what improved vs what regressed across them: rating delta, pacing delta,
-   skipped delta, and a strengths/improvements diff. Feed both feedback records to
-   the LLM to generate targeted "here's what you got better at / what slipped /
-   what to focus on next" advice. New route (e.g. `/compare`) + an API endpoint
-   that calls the configured provider (gracefully degrades when no LLM key).
-3. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
+1. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
    core deck/level logic is untested; add a tsx/node test harness for the pure
    functions in `levels.ts`/`questions.ts`/`methodologies.ts`.
-4. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
-   field; consider whether a flattened summary (avg/total) helps consumers.
-5. **"Practice this advice" CTA** — link each `advice` item back into a fresh
+2. **"Practice this advice" CTA** — link each `advice` item back into a fresh
    session pre-filtered to the weak category/level so the candidate can drill it
    immediately, closing the feedback→practice loop.
+3. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
+   field; consider whether a flattened summary (avg/total) helps consumers.
+4. **Trend chart on `/history`** — a small inline sparkline of rating over time
+   (per level/framework) so progress is visible at a glance without opening
+   `/compare`. Reuses `getSessionsForUser` + `getFeedback`; pure SVG, no deps.
+5. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
+   latest session against the user's highest-rated one, or chart all sessions of a
+   given level/framework. Builds directly on `src/lib/compare.ts`.
 
 ## Backlog (ideas)
 

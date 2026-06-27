@@ -2,7 +2,7 @@
 // offline fallbacks shared by every LLM backend.
 import { expectationsBlock, type Level } from "../levels";
 import { componentList, stepsBlock, type Methodology } from "../methodologies";
-import type { MessageRow } from "../types";
+import type { Feedback, MessageRow } from "../types";
 
 export const MAX_FOLLOWUPS = Number(process.env.QCARD_MAX_FOLLOWUPS || 2);
 
@@ -94,6 +94,87 @@ export const FEEDBACK_JSON_SCHEMA = {
   required: ["strengths", "improvements", "expectations", "advice", "overall", "rating"],
   additionalProperties: false,
 } as const;
+
+// The coach's system prompt for comparing two of the same candidate's
+// interviews (older → newer) and calling out concrete progress.
+export function comparisonSystem(): string {
+  return `You are an expert interview coach reviewing a single candidate's PROGRESS across two of their own behavioral interviews.
+You are given two structured feedback reports — an EARLIER session and a LATER session — plus the level/framework and a few numeric stats for each.
+Your job is to tell the candidate, specifically and honestly, how they changed between the two attempts.
+
+- "improved": concrete things that got BETTER in the later session vs the earlier one (skills, structure, depth, ownership, pacing, fewer skips). Reference what actually changed.
+- "regressed": things that SLIPPED in the later session, or strengths from the earlier one that disappeared. If nothing clearly regressed, return an empty array — do not invent problems.
+- "focus": the 2-3 highest-leverage things to work on next, building on the trend you see.
+- "summary": one short paragraph, encouraging but candid, naming the overall direction of travel.
+
+Compare like-for-like where you can; if the two sessions used different levels or frameworks, account for that. Be specific and reference the actual content of both reports, not generic advice.`;
+}
+
+export const COMPARISON_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    improved: { type: "array", items: { type: "string" }, description: "What got better in the later session." },
+    regressed: { type: "array", items: { type: "string" }, description: "What slipped; empty array if nothing clearly did." },
+    focus: { type: "array", items: { type: "string" }, description: "2-3 highest-leverage next focus areas." },
+    summary: { type: "string", description: "One short overall progress paragraph." },
+  },
+  required: ["improved", "regressed", "focus", "summary"],
+  additionalProperties: false,
+} as const;
+
+// One side of a comparison, as fed to the model. Kept structural (no import of
+// lib/compare) so the prompt layer stays free of a dependency cycle.
+interface ComparisonSide {
+  label: string; // "EARLIER" | "LATER"
+  level: string;
+  methodology: string;
+  rating: number | null;
+  totalSeconds: number | null;
+  questionCount: number;
+  skipped: number;
+  feedback: Feedback | null;
+}
+
+function renderComparisonSide(side: ComparisonSide): string {
+  const fb = side.feedback;
+  const lines = [
+    `## ${side.label} session`,
+    `Level: ${side.level} · Framework: ${side.methodology}`,
+    `Rating: ${side.rating ?? "n/a"}/10 · Questions: ${side.questionCount} · Skipped: ${side.skipped} · Total time: ${
+      side.totalSeconds != null ? `${Math.round(side.totalSeconds / 60)} min` : "n/a"
+    }`,
+  ];
+  if (fb) {
+    if (fb.strengths.length) lines.push(`Strengths:\n${fb.strengths.map((s) => `- ${s}`).join("\n")}`);
+    if (fb.improvements.length) lines.push(`To improve:\n${fb.improvements.map((s) => `- ${s}`).join("\n")}`);
+    if (fb.overall) lines.push(`Overall: ${fb.overall}`);
+  }
+  return lines.join("\n");
+}
+
+export function renderComparisonInput(older: ComparisonSide, newer: ComparisonSide): string {
+  return `${renderComparisonSide(older)}\n\n${renderComparisonSide(newer)}\n\nCompare the LATER session against the EARLIER one and produce the structured progress report.`;
+}
+
+export function fallbackComparison(ratingDelta: number | null) {
+  const dir =
+    ratingDelta == null
+      ? "We can't tell the direction without AI analysis"
+      : ratingDelta > 0
+        ? `Your rating went up ${ratingDelta} point${ratingDelta === 1 ? "" : "s"}`
+        : ratingDelta < 0
+          ? `Your rating dropped ${Math.abs(ratingDelta)} point${Math.abs(ratingDelta) === 1 ? "" : "s"}`
+          : "Your rating held steady";
+  return {
+    improved: ["Set an LLM API key for AI-written, transcript-specific progress notes."],
+    regressed: [],
+    focus: [
+      "Re-run both interviews' weak points and compare your structure side by side.",
+      "Quantify impact and clarify personal ownership in every story.",
+    ],
+    summary: `${dir}. (Offline fallback — set ANTHROPIC_API_KEY or GEMINI_API_KEY for AI-generated, side-by-side progress analysis.)`,
+  };
+}
 
 // ---- transcript rendering ----
 

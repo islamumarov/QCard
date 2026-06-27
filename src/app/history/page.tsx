@@ -32,9 +32,14 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Interview history</h1>
-        <Link href="/" className="chip">
-          ← New interview
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/compare" className="chip">
+            ⇄ Compare
+          </Link>
+          <Link href="/" className="chip">
+            ← New interview
+          </Link>
+        </div>
       </div>
       {children}
     </div>

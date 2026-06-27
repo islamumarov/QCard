@@ -3,16 +3,20 @@
 // and result normalization live here so they are identical across providers.
 import { getLevel } from "../levels";
 import { getMethodology } from "../methodologies";
-import type { AnswerAnalysis, Feedback, LevelId, MessageRow, MethodologyId } from "../types";
+import type { CompareSide } from "../compare";
+import type { AnswerAnalysis, Comparison, Feedback, LevelId, MessageRow, MethodologyId } from "../types";
 import { createAnthropicProvider } from "./anthropic";
 import { createGeminiProvider } from "./gemini";
 import {
   MAX_FOLLOWUPS,
+  comparisonSystem,
   fallbackBridge,
+  fallbackComparison,
   fallbackFeedback,
   fallbackFollowup,
   feedbackSystem,
   interviewerSystem,
+  renderComparisonInput,
   renderFullTranscript,
   renderQuestionTranscript,
 } from "./prompts";
@@ -115,5 +119,42 @@ export async function generateFeedback(
   } catch (err) {
     console.error(`[${provider.id}] generateFeedback failed`, err);
     return fallbackFeedback(providerName, m, lvl);
+  }
+}
+
+// ---- progress diff across two of the candidate's interviews (older -> newer) ----
+
+export async function generateComparison(older: CompareSide, newer: CompareSide): Promise<Comparison> {
+  const provider = getProvider();
+  const ratingDelta = older.rating != null && newer.rating != null ? newer.rating - older.rating : null;
+  if (!provider.enabled) return fallbackComparison(ratingDelta);
+
+  const toSide = (label: string, s: CompareSide) => ({
+    label,
+    level: s.level,
+    methodology: s.methodology,
+    rating: s.rating,
+    totalSeconds: s.totalSeconds,
+    questionCount: s.questionCount,
+    skipped: s.skipped,
+    feedback: s.feedback,
+  });
+
+  try {
+    const parsed = (await provider.generateJSON({
+      system: comparisonSystem(),
+      user: renderComparisonInput(toSide("EARLIER", older), toSide("LATER", newer)),
+      schema: "comparison",
+      maxTokens: 2048,
+    })) as Comparison;
+
+    for (const k of ["improved", "regressed", "focus"] as const) {
+      if (!Array.isArray(parsed[k])) parsed[k] = [];
+    }
+    if (typeof parsed.summary !== "string") parsed.summary = "";
+    return parsed;
+  } catch (err) {
+    console.error(`[${provider.id}] generateComparison failed`, err);
+    return fallbackComparison(ratingDelta);
   }
 }

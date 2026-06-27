@@ -1,10 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { ANALYSIS_JSON_SCHEMA, FEEDBACK_JSON_SCHEMA } from "./prompts";
+import { ANALYSIS_JSON_SCHEMA, COMPARISON_JSON_SCHEMA, FEEDBACK_JSON_SCHEMA } from "./prompts";
 import type { GenerateJSONOpts, JsonLLM, SchemaKey } from "./types";
 
 const SCHEMAS: Record<SchemaKey, Record<string, unknown>> = {
   analysis: ANALYSIS_JSON_SCHEMA as unknown as Record<string, unknown>,
   feedback: FEEDBACK_JSON_SCHEMA as unknown as Record<string, unknown>,
+  comparison: COMPARISON_JSON_SCHEMA as unknown as Record<string, unknown>,
 };
 
 function firstText(message: Anthropic.Message): string {

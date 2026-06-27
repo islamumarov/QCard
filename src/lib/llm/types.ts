@@ -1,7 +1,7 @@
 import type { LevelId, MessageRow, MethodologyId } from "../types";
 
 export type ProviderId = "anthropic" | "gemini";
-export type SchemaKey = "analysis" | "feedback";
+export type SchemaKey = "analysis" | "feedback" | "comparison";
 
 export interface GenerateJSONOpts {
   system: string;

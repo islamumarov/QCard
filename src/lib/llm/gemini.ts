@@ -25,6 +25,17 @@ const GEMINI_SCHEMAS: Record<SchemaKey, object> = {
     required: ["strengths", "improvements", "expectations", "overall", "rating"],
     propertyOrdering: ["strengths", "improvements", "expectations", "overall", "rating"],
   },
+  comparison: {
+    type: Type.OBJECT,
+    properties: {
+      improved: { type: Type.ARRAY, items: { type: Type.STRING } },
+      regressed: { type: Type.ARRAY, items: { type: Type.STRING } },
+      focus: { type: Type.ARRAY, items: { type: Type.STRING } },
+      summary: { type: Type.STRING },
+    },
+    required: ["improved", "regressed", "focus", "summary"],
+    propertyOrdering: ["improved", "regressed", "focus", "summary"],
+  },
 };
 
 export function createGeminiProvider(): JsonLLM {

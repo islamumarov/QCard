@@ -83,6 +83,15 @@ export interface Feedback {
   rating: number;
 }
 
+// LLM-generated progress diff when comparing two of the user's interviews
+// (older → newer). Deterministic numeric deltas live separately in lib/compare.
+export interface Comparison {
+  improved: string[]; // what got better between the two sessions
+  regressed: string[]; // what slipped back
+  focus: string[]; // what to work on next
+  summary: string; // one short encouraging-but-candid paragraph
+}
+
 // What the LLM decides after each candidate answer.
 export interface AnswerAnalysis {
   action: "followup" | "next";
