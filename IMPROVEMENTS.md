@@ -5,6 +5,19 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **"Practice again" CTA (feedback → practice loop)** — the final feedback report
+  now offers a **🔁 Practice again — same level & framework** button that deep-links
+  back to `/` with the just-finished session's slice pre-selected, so a candidate
+  can immediately re-drill the same difficulty/framework after reading their
+  advice. The home page (`page.tsx`) now reads optional `?level=&framework=` query
+  params and seeds the level/framework choosers from them, validated with
+  `isLevelId`/`isMethodologyId` (unknown/absent → existing defaults) exactly like
+  the `/history` filter bar; the chooser state initialises from those params.
+  `useSearchParams` required wrapping the page body in a `<Suspense>` boundary
+  (new `HomeContent` inner component). `FeedbackReport` renders the CTA only when
+  it has `state` (so the level/framework ids are known), with **New interview**
+  demoted to a ghost button beside it; both sit in a responsive row. No new deps,
+  no LLM/db changes. _(iteration 29)_
 - **Per-level/framework averages on `/history`** — a small stat row now sits atop
   the history list showing **Scored · Average · Best** for the current slice,
   reusing the already-loaded feedback ratings (the same `trendPoints` that feed
@@ -294,14 +307,15 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **"Practice this advice" CTA** — link each `advice` item back into a fresh
-   session pre-filtered to the weak category/level so the candidate can drill it
-   immediately, closing the feedback→practice loop.
-2. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
+1. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
    field; consider whether a flattened summary (avg/total) helps consumers.
-3. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
+2. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
    latest session against the user's highest-rated one, or chart all sessions of a
    given level/framework. Builds directly on `src/lib/compare.ts`.
+3. **Focus-aware practice** — go beyond replaying the same slice: thread an
+   optional `focus` (a weak `advice` item or category) through `/api/session` →
+   prompts so the interviewer emphasises the candidate's gap on the next run.
+   Builds on the new `?level=&framework=` deep-link plumbing.
 
 ## Backlog (ideas)
 

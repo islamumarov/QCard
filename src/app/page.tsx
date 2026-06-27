@@ -1,18 +1,26 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { RadioGroup } from "@/components/RadioGroup";
-import { DEFAULT_LEVEL, LEVEL_LIST } from "@/lib/levels";
-import { DEFAULT_METHODOLOGY, METHODOLOGY_LIST } from "@/lib/methodologies";
+import { DEFAULT_LEVEL, isLevelId, LEVEL_LIST } from "@/lib/levels";
+import { DEFAULT_METHODOLOGY, isMethodologyId, METHODOLOGY_LIST } from "@/lib/methodologies";
 import type { InterviewState, LevelId, MethodologyId } from "@/lib/types";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
+  // Optional ?level=&framework= deep-link pre-selects the choosers, so a "Practice
+  // again" CTA from a finished interview lands here with the same slice ready to go.
+  // Unknown/absent values fall back to the defaults (validated like /history filters).
+  const params = useSearchParams();
+  const initLevel: LevelId = isLevelId(params.get("level")) ? (params.get("level") as LevelId) : DEFAULT_LEVEL;
+  const initMethodology: MethodologyId = isMethodologyId(params.get("framework"))
+    ? (params.get("framework") as MethodologyId)
+    : DEFAULT_METHODOLOGY;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [methodology, setMethodology] = useState<MethodologyId>(DEFAULT_METHODOLOGY);
-  const [level, setLevel] = useState<LevelId>(DEFAULT_LEVEL);
+  const [methodology, setMethodology] = useState<MethodologyId>(initMethodology);
+  const [level, setLevel] = useState<LevelId>(initLevel);
   // null = still checking; the Start button stays disabled until we confirm a key is set.
   const [llmReady, setLlmReady] = useState<boolean | null>(null);
 
@@ -173,5 +181,13 @@ export default function Home() {
         type instead.
       </p>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }

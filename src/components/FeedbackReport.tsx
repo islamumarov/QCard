@@ -118,9 +118,20 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
         </div>
       )}
 
-      <a href="/" className="btn-primary mt-8 w-full">
-        New interview
-      </a>
+      <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+        {state && (
+          <a
+            href={`/?level=${state.level.id}&framework=${state.methodology.id}`}
+            className="btn-primary w-full"
+            title={`Start a fresh ${state.level.name} interview with ${state.methodology.name} — drill the same slice`}
+          >
+            🔁 Practice again — same level &amp; framework
+          </a>
+        )}
+        <a href="/" className={state ? "btn-ghost w-full" : "btn-primary w-full"}>
+          New interview
+        </a>
+      </div>
     </div>
   );
 }
