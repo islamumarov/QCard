@@ -5,6 +5,14 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Skipped-question count in history/feedback** — now that skips are logged as
+  `system`/`skip` markers, the count is surfaced. New `getSkippedCount(sessionId)`
+  in `db.ts` (a `COUNT(*) ... WHERE kind = 'skip'`), and `buildInterviewState`
+  derives `skippedCount` (new `InterviewState` field) from the already-loaded
+  messages. `FeedbackReport` shows an amber **⏭ N skipped** chip beside the
+  "Interview feedback" heading when `state.skippedCount > 0`; each `/history` row
+  shows the same chip in its badge row. `buildJSON` export now includes
+  `skippedCount`. Singular/plural-aware `title` on both chips. _(iteration 18)_
 - **Pacing summary in feedback** — the final report now surfaces how long the
   candidate spent on each question. New `Pacing`/`PacingEntry` types and a
   `pacing` field on `InterviewState`; `buildInterviewState` derives it server-side
@@ -166,12 +174,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Skipped-question count in history/feedback** — now that skips are logged,
-   surface "N skipped" on the history row and/or feedback header so a candidate
-   sees how many they ducked.
-2. **Pacing in the printable review page** — `/interview/{id}/review` doesn't yet
+1. **Pacing in the printable review page** — `/interview/{id}/review` doesn't yet
    show the new pacing breakdown; mirror the `FeedbackReport` Pacing section there
    for a complete saved/printed record.
+2. **Skipped-question chip on the printable review page** — the review route
+   doesn't yet surface the skipped count; mirror the `FeedbackReport` ⏭ chip
+   there (and in the Markdown export header) for parity with the live report.
 
 ## Backlog (ideas)
 

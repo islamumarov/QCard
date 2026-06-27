@@ -59,8 +59,18 @@ function Pacing({ pacing }: { pacing: NonNullable<InterviewState["pacing"]> }) {
 export default function FeedbackReport({ feedback, state }: { feedback: Feedback; state?: InterviewState }) {
   return (
     <div className="deck-card p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-xl font-bold">Interview feedback</h2>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold">Interview feedback</h2>
+          {state && state.skippedCount > 0 && (
+            <span
+              className="chip text-xs text-amber-300"
+              title={`${state.skippedCount} question${state.skippedCount === 1 ? "" : "s"} skipped`}
+            >
+              ⏭ {state.skippedCount} skipped
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-3xl font-bold text-accent">{feedback.rating}</span>
           <span className="text-sm text-muted">/ 10</span>

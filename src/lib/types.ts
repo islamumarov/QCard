@@ -117,6 +117,7 @@ export interface InterviewState {
   level: { id: LevelId; name: string; scopeBlurb: string };
   transcript: Turn[];
   pacing: Pacing | null; // per-question timing, or null if nothing answered yet
+  skippedCount: number; // number of questions the candidate skipped
   currentQuestion: {
     position: number;
     category: string;

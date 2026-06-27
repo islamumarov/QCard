@@ -76,6 +76,7 @@ export function buildJSON(state: InterviewState): string {
     mainQuestionCount: state.mainQuestionCount,
     transcript: state.transcript.map((t) => ({ role: t.role, kind: t.kind, content: t.content })),
     pacing: state.pacing,
+    skippedCount: state.skippedCount,
     feedback: state.feedback,
   };
   return JSON.stringify(payload, null, 2) + "\n";

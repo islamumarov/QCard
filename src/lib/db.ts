@@ -383,6 +383,16 @@ export function getMessages(sessionId: string): MessageRow[] {
     .all(sessionId) as MessageRow[];
 }
 
+// How many questions the candidate skipped in a session (one "skip" marker per
+// skipped card). Used to surface "N skipped" on the history list without loading
+// the whole transcript.
+export function getSkippedCount(sessionId: string): number {
+  const row = getDb()
+    .prepare("SELECT COUNT(*) AS n FROM messages WHERE session_id = ? AND kind = 'skip'")
+    .get(sessionId) as { n: number };
+  return row.n;
+}
+
 // Messages that belong to one main question (the card + its follow-ups + answers).
 export function getMessagesForQuestion(sessionQuestionId: number): MessageRow[] {
   return getDb()

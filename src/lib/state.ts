@@ -83,6 +83,7 @@ export function buildInterviewState(sessionId: string): InterviewState | null {
     level: { id: lvl.id, name: lvl.name, scopeBlurb: lvl.scopeBlurb },
     transcript,
     pacing: buildPacing(sessionId, messages),
+    skippedCount: messages.filter((msg) => msg.kind === "skip").length,
     currentQuestion,
     feedback,
   };

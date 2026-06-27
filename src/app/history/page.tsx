@@ -5,7 +5,7 @@
 // listing anonymous sessions.
 import Link from "next/link";
 import { auth, authConfigured } from "@/auth";
-import { getFeedback, getSessionsForUser } from "@/lib/db";
+import { getFeedback, getSessionsForUser, getSkippedCount } from "@/lib/db";
 import { getLevel } from "@/lib/levels";
 import { getMethodology } from "@/lib/methodologies";
 import DeleteSessionButton from "@/components/DeleteSessionButton";
@@ -88,6 +88,7 @@ export default async function HistoryPage() {
           const level = getLevel(s.level);
           const methodology = getMethodology(s.methodology);
           const feedback = getFeedback(s.id);
+          const skipped = getSkippedCount(s.id);
           const completed = s.status === "completed";
           return (
             <li key={s.id} className="flex items-stretch gap-2">
@@ -102,6 +103,14 @@ export default async function HistoryPage() {
                     <span className={`chip ${completed ? "text-emerald-300" : "text-amber-300"}`}>
                       {completed ? "Completed" : "In progress"}
                     </span>
+                    {skipped > 0 && (
+                      <span
+                        className="chip text-xs text-amber-300"
+                        title={`${skipped} question${skipped === 1 ? "" : "s"} skipped`}
+                      >
+                        ⏭ {skipped} skipped
+                      </span>
+                    )}
                   </div>
                   <div className="mt-2 text-xs text-muted">
                     {fmtDate(s.created_at)} · {level.name}
