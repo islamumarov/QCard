@@ -10,7 +10,7 @@ import { auth, authConfigured } from "@/auth";
 import { getSession } from "@/lib/db";
 import { exportFilename } from "@/lib/export";
 import { buildInterviewState } from "@/lib/state";
-import type { MessageKind } from "@/lib/types";
+import type { InterviewState, MessageKind } from "@/lib/types";
 import PrintButton from "@/components/PrintButton";
 
 export const runtime = "nodejs";
@@ -32,6 +32,43 @@ const ROLE_LABEL: Record<MessageKind, string> = {
   skip: "Skipped",
   feedback: "Interviewer",
 };
+
+// M:SS for a duration in seconds — matches the live feedback report.
+function fmtDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Soft tone for per-question time (~2 min target, amber past 2, rose past 4).
+function paceTone(seconds: number): string {
+  if (seconds >= 240) return "text-rose-400";
+  if (seconds >= 120) return "text-amber-400";
+  return "text-muted";
+}
+
+function Pacing({ pacing }: { pacing: NonNullable<InterviewState["pacing"]> }) {
+  return (
+    <div className="deck-card p-6">
+      <h2 className="mb-4 text-lg font-bold">Pacing</h2>
+      <ul className="space-y-1.5">
+        {pacing.perQuestion.map((p) => (
+          <li key={p.position} className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="text-fg">
+              <span className="text-muted">Q{p.position}</span> · {p.category}
+            </span>
+            <span className={`tabular-nums font-medium ${paceTone(p.seconds)}`}>{fmtDuration(p.seconds)}</span>
+          </li>
+        ))}
+        <li className="mt-1 flex items-baseline justify-between gap-3 border-t border-edge pt-1.5 text-sm font-semibold">
+          <span className="text-fg">Total</span>
+          <span className="tabular-nums text-fg">{fmtDuration(pacing.totalSeconds)}</span>
+        </li>
+      </ul>
+      <p className="mt-2 text-xs text-muted">Aim for ~2 min per question — amber past 2 min, rose past 4.</p>
+    </div>
+  );
+}
 
 function FbList({ title, items, dot }: { title: string; items: string[]; dot: string }) {
   if (!items.length) return null;
@@ -99,6 +136,14 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               {state.mainQuestionCount} {state.mainQuestionCount === 1 ? "question" : "questions"} ·{" "}
               <span className="font-mono">{stem}</span>
             </p>
+            {state.skippedCount > 0 && (
+              <span
+                className="chip mt-2 inline-flex text-xs text-amber-300"
+                title={`${state.skippedCount} question${state.skippedCount === 1 ? "" : "s"} skipped`}
+              >
+                ⏭ {state.skippedCount} skipped
+              </span>
+            )}
           </div>
           {fb && (
             <div className="flex shrink-0 items-baseline gap-1">
@@ -132,6 +177,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           </div>
         )}
       </div>
+
+      {/* pacing */}
+      {state.pacing && <Pacing pacing={state.pacing} />}
 
       {/* feedback */}
       {fb ? (

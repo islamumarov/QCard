@@ -5,6 +5,15 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Pacing + skipped chip on the printable review page** — the read-only
+  `/interview/{id}/review` route now mirrors the live `FeedbackReport` for a
+  complete saved/printed record. A new **Pacing** `deck-card` section (local
+  `fmtDuration`/`paceTone` helpers copied from the report) renders the
+  per-question Q# · category → M:SS breakdown with a total row and the same soft
+  thresholds (neutral <2 min, amber past 2, rose past 4), shown only when
+  `state.pacing` exists. The summary header now also carries the amber **⏭ N
+  skipped** chip (singular/plural `title`) when `state.skippedCount > 0`, matching
+  the report and `/history` rows. _(iteration 19)_
 - **Skipped-question count in history/feedback** — now that skips are logged as
   `system`/`skip` markers, the count is surfaced. New `getSkippedCount(sessionId)`
   in `db.ts` (a `COUNT(*) ... WHERE kind = 'skip'`), and `buildInterviewState`
@@ -174,12 +183,16 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Pacing in the printable review page** — `/interview/{id}/review` doesn't yet
-   show the new pacing breakdown; mirror the `FeedbackReport` Pacing section there
-   for a complete saved/printed record.
-2. **Skipped-question chip on the printable review page** — the review route
-   doesn't yet surface the skipped count; mirror the `FeedbackReport` ⏭ chip
-   there (and in the Markdown export header) for parity with the live report.
+1. **Skipped + pacing in the Markdown/JSON export header** — the `## Pacing` block
+   already lands in the MD export, but the skipped count isn't surfaced in the MD
+   header (or as a JSON top-level field beyond `skippedCount`); add a one-line
+   "⏭ N skipped" note to the Markdown header for parity with the on-screen reports.
+2. **Rate-limit / abuse guard on the API routes** — the answer/feedback/session
+   routes have no throttle; add a lightweight per-IP (or per-session) limiter so
+   the LLM endpoints can't be hammered.
+3. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
+   core deck/level logic is untested; add a tsx/node test harness for the pure
+   functions in `levels.ts`/`questions.ts`/`methodologies.ts`.
 
 ## Backlog (ideas)
 
