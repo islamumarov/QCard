@@ -152,6 +152,34 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
     }
   }, [busy, sessionId, stt, tts]);
 
+  const skipQuestion = useCallback(async () => {
+    if (busy) return;
+    if (!window.confirm("Skip this question and move on? You won't be able to come back to it.")) return;
+    if (stt.listening) stt.stop();
+    tts.cancel();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/answer/skip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to skip");
+      }
+      const data = (await res.json()) as InterviewState;
+      setState(data);
+      setAnswer("");
+      stt.reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to skip");
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, sessionId, stt, tts]);
+
   function toggleMic() {
     if (stt.listening) {
       stt.stop();
@@ -195,6 +223,10 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
     !generatingFeedback &&
     lastMainIdx >= 0 &&
     state.transcript.slice(lastMainIdx + 1).some((t) => t.kind === "answer");
+
+  // Skipping is offered whenever a question is open — a way past a card the
+  // candidate can't (or would rather not) answer. It's the companion to Redo.
+  const canSkip = !finished && !generatingFeedback && !!state.currentQuestion;
 
   const providerLabel =
     state.provider.id === "gemini" ? "Google Gemini" : "Anthropic Claude";
@@ -342,6 +374,16 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
                   ↩ Redo last answer
                 </button>
               )}
+              {canSkip && (
+                <button
+                  className="btn-ghost text-sm"
+                  onClick={skipQuestion}
+                  disabled={busy}
+                  title="Move past this question without answering — you won't return to it"
+                >
+                  ⏭ Skip question
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="hidden text-xs text-subtle sm:inline">⌘/Ctrl + ↵</span>
@@ -391,6 +433,15 @@ function pacingHint(seconds: number): {
 }
 
 function Bubble({ turn }: { turn: Turn }) {
+  // A skipped card is a quiet centered marker, not a chat bubble.
+  if (turn.kind === "skip") {
+    return (
+      <div className="flex justify-center">
+        <span className="rounded-full bg-surface px-3 py-1 text-[11px] text-muted">⏭ Question skipped</span>
+      </div>
+    );
+  }
+
   const isCandidate = turn.role === "candidate";
   const labels: Record<string, string> = {
     intro: "Interviewer",

@@ -29,6 +29,7 @@ const ROLE_LABEL: Record<MessageKind, string> = {
   main: "Interviewer · question",
   followup: "Interviewer",
   answer: "You",
+  skip: "Skipped",
   feedback: "Interviewer",
 };
 

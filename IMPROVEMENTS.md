@@ -5,6 +5,19 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **"Skip this question" option** — candidates can now move past a card they
+  can't (or would rather not) answer instead of being stuck. New `MessageKind`
+  `"skip"` and `skipQuestion(sessionId)` in `db.ts` log a `system`/`skip` marker
+  on the active card, then reuse `advanceToNextQuestion` (so it advances or
+  finishes exactly like a normal answer would). New `POST /api/answer/skip`
+  mirrors the answer route — guards an active question, skips, reveals the next
+  main card (or lets the client request feedback when it was the last). The
+  composer shows a **⏭ Skip question** chip beside Redo whenever a question is
+  open (a `window.confirm` guards the irreversible move); the skipped card renders
+  as a quiet centered "⏭ Question skipped" marker in the transcript, the review
+  page and MD/JSON exports label it "Skipped", and `renderFullTranscript` feeds
+  the feedback model `(skipped this question — no answer given)` so the final
+  report accounts for it. _(iteration 16)_
 - **Per-question pacing timer** — the progress row now shows a live `⏱ M:SS`
   chip counting time on the current question. State `elapsed` ticks once a second
   via `setInterval` only while `awaiting === "answer"` and not `busy` (so the
@@ -142,10 +155,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **"Skip this question" option** — let a candidate move past a question they
-   can't answer (companion to Redo; advance without an answer logged).
-2. **Pacing summary in feedback** — surface per-question times (and total) in the
+1. **Pacing summary in feedback** — surface per-question times (and total) in the
    final feedback report so candidates can review where they ran long.
+2. **Skipped-question count in history/feedback** — now that skips are logged,
+   surface "N skipped" on the history row and/or feedback header so a candidate
+   sees how many they ducked.
 
 ## Backlog (ideas)
 

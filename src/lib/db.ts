@@ -460,6 +460,21 @@ export function retryLastAnswer(sessionId: string): string | null {
   return lastAnswer.content;
 }
 
+// Move past the active question without logging an answer — for a candidate who
+// would rather not attempt it. Records a system "skip" marker on the card (so the
+// transcript and final feedback reflect that it was skipped, not silently missed),
+// then advances. Returns the next active session-question, or null when that was
+// the last card (interview finished) or there was nothing active to skip.
+export function skipQuestion(sessionId: string): SessionQuestionRow | null {
+  const session = getSession(sessionId);
+  if (!session || session.status === "completed") return null;
+  const activeSQ = getActiveSessionQuestion(sessionId);
+  if (!activeSQ) return null;
+
+  addMessage(sessionId, activeSQ.id, "system", "skip", "Question skipped.");
+  return advanceToNextQuestion(sessionId);
+}
+
 // Close out the current card and advance. Returns the next active session-question,
 // or null when all main questions are exhausted.
 export function advanceToNextQuestion(sessionId: string): SessionQuestionRow | null {

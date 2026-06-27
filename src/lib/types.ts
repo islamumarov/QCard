@@ -16,6 +16,7 @@ export type MessageKind =
   | "main" // a main behavioral question (the card)
   | "followup" // an AI-generated follow-up to the candidate's answer
   | "answer" // candidate's spoken/typed answer
+  | "skip" // candidate moved past a question without answering it
   | "feedback"; // final feedback block
 
 export interface Question {

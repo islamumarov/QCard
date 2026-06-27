@@ -8,6 +8,7 @@ const ROLE_LABEL: Record<Turn["kind"], string> = {
   main: "Interviewer (question)",
   followup: "Interviewer",
   answer: "You",
+  skip: "Skipped",
   feedback: "Interviewer",
 };
 

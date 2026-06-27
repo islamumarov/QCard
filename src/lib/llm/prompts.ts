@@ -104,7 +104,11 @@ export function renderQuestionTranscript(messages: MessageRow[]): string {
 export function renderFullTranscript(allMessages: MessageRow[]): string {
   return allMessages
     .filter((m) => m.kind !== "intro")
-    .map((m) => `${m.role === "candidate" ? "Candidate" : "Interviewer"}: ${m.content}`)
+    .map((m) =>
+      m.kind === "skip"
+        ? "Candidate: (skipped this question — no answer given)"
+        : `${m.role === "candidate" ? "Candidate" : "Interviewer"}: ${m.content}`,
+    )
     .join("\n");
 }
 
