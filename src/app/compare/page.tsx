@@ -8,10 +8,12 @@ import Link from "next/link";
 import { auth, authConfigured } from "@/auth";
 import { diffSides, loadCompareSide, orderByDate, pickBestAndLatest, type CompareSide } from "@/lib/compare";
 import { getFeedback, getSessionsForUser } from "@/lib/db";
-import { getLevel } from "@/lib/levels";
+import { getLevel, isLevelId, LEVEL_LIST } from "@/lib/levels";
 import { llmEnabled } from "@/lib/llm";
-import { getMethodology } from "@/lib/methodologies";
+import { getMethodology, isMethodologyId, METHODOLOGY_LIST } from "@/lib/methodologies";
 import CompareAdvice from "@/components/CompareAdvice";
+import RatingTrend, { type TrendPoint } from "@/components/RatingTrend";
+import type { LevelId, MethodologyId } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,7 +86,77 @@ function SideCard({ side, when }: { side: CompareSide; when: string }) {
   );
 }
 
-export default async function ComparePage({ searchParams }: { searchParams: Promise<{ a?: string; b?: string }> }) {
+// Multi-session trend: chart every completed, scored run in the chosen
+// level/framework slice over time — the "compare more than two" view. Reuses
+// RatingTrend's pure-SVG plot and a native GET-form filter (no client JS),
+// mirroring /history. Hidden when the slice has fewer than two scored runs.
+function MultiTrend({
+  points,
+  level,
+  framework,
+  carry,
+}: {
+  points: TrendPoint[];
+  level: LevelId | "";
+  framework: MethodologyId | "";
+  carry: { a: string; b: string };
+}) {
+  const active = level !== "" || framework !== "";
+  return (
+    <section className="flex flex-col gap-3">
+      <form method="get" className="deck-card flex flex-wrap items-end gap-3 p-4">
+        {/* Preserve the two-at-a-time picker selection across a filter change. */}
+        <input type="hidden" name="a" value={carry.a} />
+        <input type="hidden" name="b" value={carry.b} />
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Level
+          <select name="level" defaultValue={level} className="chip text-sm">
+            <option value="">All levels</option>
+            {LEVEL_LIST.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Framework
+          <select name="framework" defaultValue={framework} className="chip text-sm">
+            <option value="">All frameworks</option>
+            {METHODOLOGY_LIST.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" className="btn text-sm">
+          Chart slice
+        </button>
+        {active && (
+          <Link href={`/compare?a=${carry.a}&b=${carry.b}`} className="chip text-sm hover:bg-surface-2">
+            Clear
+          </Link>
+        )}
+      </form>
+      {points.length < 2 ? (
+        <div className="deck-card p-4 text-sm text-muted">
+          {active
+            ? "Fewer than two scored runs in this slice — chart needs at least two."
+            : "Chart all your runs over time, or filter to a single level/framework above."}
+        </div>
+      ) : (
+        <RatingTrend points={points} />
+      )}
+    </section>
+  );
+}
+
+export default async function ComparePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ a?: string; b?: string; level?: string; framework?: string }>;
+}) {
   if (!authConfigured) {
     return (
       <Shell>
@@ -124,10 +196,38 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const { a, b } = await searchParams;
+  const { a, b, level, framework } = await searchParams;
   const ids = new Set(completed.map((s) => s.id));
   const selA = a && ids.has(a) ? a : completed[0].id;
   const selB = b && ids.has(b) ? b : completed[1].id;
+
+  // Multi-session trend filter (validated; unknown values are ignored), the
+  // "compare more than two" view. Plot every completed, scored run in the slice
+  // oldest→newest (sessions arrive newest-first, so reverse).
+  const levelFilter: LevelId | "" = isLevelId(level) ? level : "";
+  const frameworkFilter: MethodologyId | "" = isMethodologyId(framework) ? framework : "";
+  const trendPoints: TrendPoint[] = completed
+    .filter(
+      (s) =>
+        (levelFilter === "" || s.level === levelFilter) &&
+        (frameworkFilter === "" || s.methodology === frameworkFilter),
+    )
+    .map((s) => {
+      const fb = getFeedback(s.id);
+      if (!fb) return null;
+      const lvl = getLevel(s.level);
+      const mth = getMethodology(s.methodology);
+      return {
+        rating: fb.rating,
+        date: s.created_at,
+        level: lvl.shortLabel,
+        framework: mth.name,
+        levelId: s.level,
+        methodologyId: s.methodology,
+      } satisfies TrendPoint;
+    })
+    .filter((p): p is TrendPoint => p !== null)
+    .reverse();
 
   const candidates: { id: string; createdAt: string; rating: number }[] = [];
   const options = completed.map((s) => {
@@ -176,6 +276,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   return (
     <Shell>
       <form method="get" className="deck-card flex flex-wrap items-end gap-3 p-4">
+        {/* Preserve the chart slice across a compare submit. */}
+        {levelFilter && <input type="hidden" name="level" value={levelFilter} />}
+        {frameworkFilter && <input type="hidden" name="framework" value={frameworkFilter} />}
         <label className="flex flex-1 flex-col gap-1 text-sm">
           <span className="text-muted">Earlier (or A)</span>
           <select name="a" defaultValue={selA} className="rounded-lg border border-edge bg-surface px-3 py-2 text-fg">
@@ -210,6 +313,15 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         )}
       </form>
       {body}
+      <div className="mt-1 border-t border-edge pt-4">
+        <h2 className="mb-1 text-sm font-semibold text-muted">All runs over time</h2>
+        <MultiTrend
+          points={trendPoints}
+          level={levelFilter}
+          framework={frameworkFilter}
+          carry={{ a: selA, b: selB }}
+        />
+      </div>
     </Shell>
   );
 }

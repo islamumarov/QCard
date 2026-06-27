@@ -5,6 +5,18 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Multi-session chart on `/compare`** — beyond two-at-a-time, the page now
+  charts *every* completed, scored run over time via a new **All runs over time**
+  section that reuses `RatingTrend`'s pure-SVG plot. A native GET-form filter
+  (Level + Framework `<select>`s, no client JS) narrows the slice exactly like
+  `/history`; params are validated with `isLevelId`/`isMethodologyId` (unknown →
+  ignored) and the points are built from the `getFeedback` calls the page already
+  makes for its option labels (no extra queries), reversed to chronological. The
+  two pickers cross-preserve: the filter form carries the current `a`/`b` via
+  hidden inputs and a **Clear** link back to `?a=&b=`, while the compare form
+  carries the active `level`/`framework` as hidden inputs — so changing either
+  doesn't reset the other. The chart self-hides below 2 points with a slice-aware
+  hint. No new deps, no schema/LLM changes. _(iteration 34)_
 - **Surface the run's focus in state/exports** — closed the loop on focus-aware
   practice: `InterviewState` now carries `focus: string \| null`, set in
   `buildInterviewState` from `session.focus`. The feedback report and the
@@ -355,10 +367,7 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Multi-session chart on `/compare`** — beyond two-at-a-time, chart all runs
-   of a chosen level/framework over time (reuse `RatingTrend`'s pure-SVG plot,
-   filtered like `/history`). The other half of the old "compare more than two".
-2. **Filter `/history` by focus** — focus runs are now distinguishable; let the
+1. **Filter `/history` by focus** — focus runs are now distinguishable; let the
    candidate filter the history list to just the runs where they drilled a
    weakness (a "🎯 focused only" toggle), and show the focus text on each
    focused row's badge line so a drill-and-retry streak is visible at a glance.
@@ -376,6 +385,9 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 - Analytics: aggregate ratings over time per level/framework.
 - Auto-retry a 429 after the `Retry-After` window (with a countdown) instead of
   asking the candidate to resubmit manually.
+- Show the multi-session chart's slice average/best beside it (reuse the
+  `StatBar` idea from `/history`) so `/compare`'s trend has the same at-a-glance
+  numbers as the history page.
 
 ## Conventions
 
