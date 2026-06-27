@@ -15,7 +15,14 @@ export const authConfigured = Boolean(
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // No providers => NextAuth routes exist but offer nothing to sign in with.
-  providers: authConfigured ? [Google] : [],
+  providers: authConfigured
+    ? [
+        Google({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
+      ]
+    : [],
   // Trust the deployment host header (Auth.js needs this behind proxies and
   // keeps local dev / preview deploys working without extra config).
   trustHost: true,
