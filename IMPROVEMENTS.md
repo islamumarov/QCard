@@ -5,6 +5,18 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **"Latest vs. your best" quick-compare** — `/compare` now offers a one-click
+  **⚡ Latest vs. your best** chip beside the Compare button that deep-links
+  straight into the existing picker (`?a=best&b=latest`) so the comparison
+  renders immediately. New pure, testable `pickBestAndLatest(candidates)` in
+  `src/lib/compare.ts` reduces the completed+scored sessions to id/date/rating
+  and returns the highest-rated run (ties break toward the more recent) paired
+  with the most-recent run, or `null` when there are <2 candidates or the best
+  run *is* the latest (nothing to contrast). The page builds the candidate list
+  from the `getFeedback` calls it already makes for the option labels, so no
+  extra queries; the chip is hidden when `pickBestAndLatest` returns null. Four
+  new tests in `tests/lib.test.ts` (empty/singleton, best≠latest pick, tie→null,
+  best-is-latest→null). No new deps, no schema/LLM changes. _(iteration 31)_
 - **Flattened pacing summary in exports** — exports now carry a roll-up so
   consumers don't have to re-derive timing from `perQuestion`. New pure,
   testable `pacingSummary(pacing)` in `src/lib/export.ts` returns
@@ -317,13 +329,13 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
-   latest session against the user's highest-rated one, or chart all sessions of a
-   given level/framework. Builds directly on `src/lib/compare.ts`.
-2. **Focus-aware practice** — go beyond replaying the same slice: thread an
+1. **Focus-aware practice** — go beyond replaying the same slice: thread an
    optional `focus` (a weak `advice` item or category) through `/api/session` →
    prompts so the interviewer emphasises the candidate's gap on the next run.
    Builds on the new `?level=&framework=` deep-link plumbing.
+2. **Multi-session chart on `/compare`** — beyond two-at-a-time, chart all runs
+   of a chosen level/framework over time (reuse `RatingTrend`'s pure-SVG plot,
+   filtered like `/history`). The other half of the old "compare more than two".
 
 ## Backlog (ideas)
 

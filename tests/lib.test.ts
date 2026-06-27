@@ -29,6 +29,7 @@ import {
 import { pickQuestionsForLevel } from "../src/lib/db";
 import { interviewerSystem, feedbackSystem } from "../src/lib/llm/prompts";
 import { pacingSummary } from "../src/lib/export";
+import { pickBestAndLatest } from "../src/lib/compare";
 
 // ---- levelBand -----------------------------------------------------------
 
@@ -199,4 +200,37 @@ test("pacingSummary rolls up count, average, and slowest question", () => {
   assert.equal(sum.totalSeconds, 270);
   assert.equal(sum.averageSeconds, 90);
   assert.deepEqual(sum.slowest, { position: 2, category: "Conflict", seconds: 180 });
+});
+
+test("pickBestAndLatest returns null with fewer than two candidates", () => {
+  assert.equal(pickBestAndLatest([]), null);
+  assert.equal(pickBestAndLatest([{ id: "a", createdAt: "2026-01-01", rating: 7 }]), null);
+});
+
+test("pickBestAndLatest picks highest rating and newest date", () => {
+  const got = pickBestAndLatest([
+    { id: "old-best", createdAt: "2026-01-01", rating: 9 },
+    { id: "mid", createdAt: "2026-02-01", rating: 5 },
+    { id: "latest", createdAt: "2026-03-01", rating: 7 },
+  ]);
+  assert.deepEqual(got, { best: "old-best", latest: "latest" });
+});
+
+test("pickBestAndLatest breaks rating ties toward the more recent run", () => {
+  const got = pickBestAndLatest([
+    { id: "early-8", createdAt: "2026-01-01", rating: 8 },
+    { id: "late-8", createdAt: "2026-02-01", rating: 8 },
+  ]);
+  // both rated 8, so best === latest (late-8) → nothing to contrast → null
+  assert.equal(got, null);
+});
+
+test("pickBestAndLatest returns null when the best run is also the latest", () => {
+  assert.equal(
+    pickBestAndLatest([
+      { id: "x", createdAt: "2026-01-01", rating: 4 },
+      { id: "y", createdAt: "2026-02-01", rating: 9 },
+    ]),
+    null,
+  );
 });

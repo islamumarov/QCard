@@ -53,6 +53,30 @@ export function orderByDate(a: CompareSide, b: CompareSide): [CompareSide, Compa
   return Date.parse(a.createdAt) <= Date.parse(b.createdAt) ? [a, b] : [b, a];
 }
 
+// A minimal candidate row for the "vs. your best" quick-compare: every
+// completed, scored session reduced to id / date / rating. Kept tiny and pure
+// so it's testable without the DB.
+export interface CompareCandidate {
+  id: string;
+  createdAt: string;
+  rating: number;
+}
+
+// Pick the candidate's highest-rated run and their most recent run, so the page
+// can deep-link straight to "latest vs. your best". Best ties break toward the
+// more recent run; returns null when there are fewer than two candidates or the
+// best run *is* the latest (nothing meaningful to contrast).
+export function pickBestAndLatest(candidates: CompareCandidate[]): { best: string; latest: string } | null {
+  if (candidates.length < 2) return null;
+  const byNewest = [...candidates].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const latest = byNewest[0];
+  const best = [...candidates].sort(
+    (a, b) => b.rating - a.rating || Date.parse(b.createdAt) - Date.parse(a.createdAt),
+  )[0];
+  if (best.id === latest.id) return null;
+  return { best: best.id, latest: latest.id };
+}
+
 export function diffSides(older: CompareSide, newer: CompareSide): CompareDiff {
   return {
     ratingDelta: older.rating != null && newer.rating != null ? newer.rating - older.rating : null,

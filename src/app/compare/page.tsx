@@ -6,7 +6,7 @@
 // or nobody is signed in.
 import Link from "next/link";
 import { auth, authConfigured } from "@/auth";
-import { diffSides, loadCompareSide, orderByDate, type CompareSide } from "@/lib/compare";
+import { diffSides, loadCompareSide, orderByDate, pickBestAndLatest, type CompareSide } from "@/lib/compare";
 import { getFeedback, getSessionsForUser } from "@/lib/db";
 import { getLevel } from "@/lib/levels";
 import { llmEnabled } from "@/lib/llm";
@@ -129,8 +129,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const selA = a && ids.has(a) ? a : completed[0].id;
   const selB = b && ids.has(b) ? b : completed[1].id;
 
+  const candidates: { id: string; createdAt: string; rating: number }[] = [];
   const options = completed.map((s) => {
     const fb = getFeedback(s.id);
+    if (fb) candidates.push({ id: s.id, createdAt: s.created_at, rating: fb.rating });
     return {
       id: s.id,
       label: `${fmtDate(s.created_at)} · ${getLevel(s.level).shortLabel} · ${getMethodology(s.methodology).name}${
@@ -138,6 +140,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       }`,
     };
   });
+
+  // One-click "latest vs. your best" — deep-links into the same picker so the
+  // comparison renders immediately. Hidden when the best run is also the latest.
+  const quick = pickBestAndLatest(candidates);
 
   // Build the comparison when two distinct, owned sessions are selected.
   let body: React.ReactNode = null;
@@ -193,6 +199,15 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         <button type="submit" className="btn px-4 py-2 text-sm">
           Compare
         </button>
+        {quick && (
+          <Link
+            href={`/compare?a=${quick.best}&b=${quick.latest}`}
+            className="chip"
+            title="Compare your most recent interview against your highest-rated one"
+          >
+            ⚡ Latest vs. your best
+          </Link>
+        )}
       </form>
       {body}
     </Shell>
