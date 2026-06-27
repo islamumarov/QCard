@@ -365,6 +365,12 @@ export function getSessionQuestionByPosition(sessionId: string, position: number
     .get(sessionId, position) as SessionQuestionRow | undefined;
 }
 
+export function getSessionQuestions(sessionId: string): SessionQuestionRow[] {
+  return getDb()
+    .prepare("SELECT * FROM session_questions WHERE session_id = ? ORDER BY position ASC")
+    .all(sessionId) as SessionQuestionRow[];
+}
+
 export function getActiveSessionQuestion(sessionId: string): SessionQuestionRow | undefined {
   const s = getSession(sessionId);
   if (!s) return undefined;

@@ -18,6 +18,44 @@ function List({ title, items, tone }: { title: string; items: string[]; tone: "g
   );
 }
 
+// M:SS for a duration in seconds.
+function fmtDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Soft tone for per-question time — mirrors the live composer's pacing hint
+// (~2 min target, amber past 2, rose past 4). Purely advisory.
+function paceTone(seconds: number): string {
+  if (seconds >= 240) return "text-rose-400";
+  if (seconds >= 120) return "text-amber-400";
+  return "text-muted";
+}
+
+function Pacing({ pacing }: { pacing: NonNullable<InterviewState["pacing"]> }) {
+  return (
+    <div className="mt-6">
+      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Pacing</h3>
+      <ul className="space-y-1.5">
+        {pacing.perQuestion.map((p) => (
+          <li key={p.position} className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="text-fg">
+              <span className="text-muted">Q{p.position}</span> · {p.category}
+            </span>
+            <span className={`tabular-nums font-medium ${paceTone(p.seconds)}`}>{fmtDuration(p.seconds)}</span>
+          </li>
+        ))}
+        <li className="mt-1 flex items-baseline justify-between gap-3 border-t border-edge pt-1.5 text-sm font-semibold">
+          <span className="text-fg">Total</span>
+          <span className="tabular-nums text-fg">{fmtDuration(pacing.totalSeconds)}</span>
+        </li>
+      </ul>
+      <p className="mt-2 text-xs text-muted">Aim for ~2 min per question — amber past 2 min, rose past 4.</p>
+    </div>
+  );
+}
+
 export default function FeedbackReport({ feedback, state }: { feedback: Feedback; state?: InterviewState }) {
   return (
     <div className="deck-card p-6">
@@ -38,6 +76,8 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
         <List title="What to improve" items={feedback.improvements} tone="warn" />
         <List title="What was expected" items={feedback.expectations} tone="info" />
       </div>
+
+      {state?.pacing && <Pacing pacing={state.pacing} />}
 
       {state && (
         <div className="mt-6">

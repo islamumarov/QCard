@@ -84,6 +84,19 @@ export interface AnswerAnalysis {
   message: string; // interviewer's next utterance (a follow-up, or a bridge to the next card)
 }
 
+// How long the candidate spent on one main question (card + its follow-ups).
+export interface PacingEntry {
+  position: number; // 1-based question number
+  category: string;
+  seconds: number;
+}
+
+// Per-question + total time spent answering, derived from message timestamps.
+export interface Pacing {
+  perQuestion: PacingEntry[];
+  totalSeconds: number;
+}
+
 // One turn shown to the client.
 export interface Turn {
   id: number;
@@ -103,6 +116,7 @@ export interface InterviewState {
   methodology: { id: MethodologyId; name: string; expansion: string; steps: string[] };
   level: { id: LevelId; name: string; scopeBlurb: string };
   transcript: Turn[];
+  pacing: Pacing | null; // per-question timing, or null if nothing answered yet
   currentQuestion: {
     position: number;
     category: string;

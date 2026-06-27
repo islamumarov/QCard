@@ -34,6 +34,17 @@ export function buildMarkdown(state: InterviewState): string {
     lines.push("");
   }
 
+  if (state.pacing) {
+    lines.push("## Pacing");
+    lines.push("");
+    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    for (const p of state.pacing.perQuestion) {
+      lines.push(`- **Q${p.position} · ${p.category}:** ${fmt(p.seconds)}`);
+    }
+    lines.push(`- **Total:** ${fmt(state.pacing.totalSeconds)}`);
+    lines.push("");
+  }
+
   const fb = state.feedback;
   if (fb) {
     lines.push("## Feedback");
@@ -64,6 +75,7 @@ export function buildJSON(state: InterviewState): string {
     methodology: state.methodology,
     mainQuestionCount: state.mainQuestionCount,
     transcript: state.transcript.map((t) => ({ role: t.role, kind: t.kind, content: t.content })),
+    pacing: state.pacing,
     feedback: state.feedback,
   };
   return JSON.stringify(payload, null, 2) + "\n";

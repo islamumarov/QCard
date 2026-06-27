@@ -5,6 +5,17 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Pacing summary in feedback** — the final report now surfaces how long the
+  candidate spent on each question. New `Pacing`/`PacingEntry` types and a
+  `pacing` field on `InterviewState`; `buildInterviewState` derives it server-side
+  in `buildPacing()` by grouping messages by `session_question_id` (via new
+  `getSessionQuestions()`) and taking each question's span from its first message
+  (the card) to its last (created_at timestamps), summing to a total — only
+  questions actually reached are counted, `null` if nothing's been answered.
+  `FeedbackReport` renders a **Pacing** section (Q# · category → M:SS, with a
+  total row) using the same soft thresholds as the live composer timer (neutral
+  under 2 min, amber past 2, rose past 4). Pacing also flows into the Markdown
+  export (a `## Pacing` block) and the JSON export. _(iteration 17)_
 - **"Skip this question" option** — candidates can now move past a card they
   can't (or would rather not) answer instead of being stuck. New `MessageKind`
   `"skip"` and `skipQuestion(sessionId)` in `db.ts` log a `system`/`skip` marker
@@ -155,11 +166,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Pacing summary in feedback** — surface per-question times (and total) in the
-   final feedback report so candidates can review where they ran long.
-2. **Skipped-question count in history/feedback** — now that skips are logged,
+1. **Skipped-question count in history/feedback** — now that skips are logged,
    surface "N skipped" on the history row and/or feedback header so a candidate
    sees how many they ducked.
+2. **Pacing in the printable review page** — `/interview/{id}/review` doesn't yet
+   show the new pacing breakdown; mirror the `FeedbackReport` Pacing section there
+   for a complete saved/printed record.
 
 ## Backlog (ideas)
 
