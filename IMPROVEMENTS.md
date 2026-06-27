@@ -5,6 +5,18 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Mobile layout polish pass** — the app now respects small screens and notched
+  devices. `layout.tsx` exports a `viewport` with `viewportFit: "cover"` so the
+  page can extend under the notch/home-indicator, and `globals.css` adds
+  `env(safe-area-inset-*)` padding on `<body>` (left/right/bottom) plus a
+  `100dvh` `min-height` so the dynamic viewport (mobile browser chrome / keyboard)
+  no longer clips content. The header is now `flex-wrap` with a `gap` and the long
+  "behavioral interview practice" chip is `hidden sm:inline-flex`, so the
+  logo/theme/auth controls never get squished on narrow widths. In the interview
+  view the transcript switched from `max-h-[42vh]` to `max-h-[50dvh]
+  sm:max-h-[42vh]` — on phones it shrinks with the dynamic viewport so the
+  composer stays reachable above the keyboard — and the composer's button row is
+  `flex-wrap` so Speak/Clear and Send wrap instead of overflowing. _(iteration 13)_
 - **Printable per-session review page** — new read-only `/interview/{id}/review`
   server route lays out the full transcript + feedback for reading or saving as
   PDF. It reuses `buildInterviewState(id)` and enforces the same ownership guard
@@ -108,8 +120,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Mobile layout polish pass** — chips wrap cleanly, composer reachable above
-   the keyboard, safe-area insets on the fixed header/footer.
+1. **"Retry this answer" before moving on** — let a candidate redo their last
+   answer instead of being locked in once submitted.
+2. **Per-question timer / pacing indicator** — show elapsed time per question to
+   build interview pacing awareness.
 
 ## Backlog (ideas)
 

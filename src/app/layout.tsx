@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import AuthButton from "@/components/AuthButton";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -7,6 +7,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "QCard — Behavioral Interview Card Game",
   description: "Draw a card, answer aloud, get AI follow-ups and a full feedback report. Voice in, voice out.",
+};
+
+// `viewport-fit=cover` lets the page extend under notches/rounded corners so the
+// `env(safe-area-inset-*)` padding in globals.css can keep content clear of them.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 // Applies a stored light/dark choice to <html> before first paint so there's no
@@ -22,13 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-6">
-          <header className="mb-6 flex items-center justify-between">
+          <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <a href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-white">Q</span>
               QCard
             </a>
             <div className="flex items-center gap-2">
-              <span className="chip">behavioral interview practice</span>
+              <span className="chip hidden sm:inline-flex">behavioral interview practice</span>
               <ThemeToggle />
               <Suspense fallback={null}>
                 <AuthButton />
