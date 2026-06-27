@@ -419,6 +419,47 @@ export function incrementFollowups(sessionQuestionId: number) {
   getDb().prepare("UPDATE session_questions SET followups_asked = followups_asked + 1 WHERE id = ?").run(sessionQuestionId);
 }
 
+// Undo the candidate's most recent answer to the *currently active* question,
+// along with any interviewer reply that followed it, so they can redo it before
+// moving on. Returns the removed answer's text (to repopulate the composer), or
+// null if there's nothing to retry. Deliberately scoped to the active question:
+// once a card is left behind it's "done" and locked. followups_asked is rolled
+// back by however many follow-ups were removed so pacing stays correct.
+export function retryLastAnswer(sessionId: string): string | null {
+  const db = getDb();
+  const session = getSession(sessionId);
+  if (!session || session.status === "completed") return null;
+  const activeSQ = getActiveSessionQuestion(sessionId);
+  if (!activeSQ) return null;
+
+  const msgs = getMessagesForQuestion(activeSQ.id);
+  let lastAnswer: MessageRow | undefined;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role === "candidate" && msgs[i].kind === "answer") {
+      lastAnswer = msgs[i];
+      break;
+    }
+  }
+  if (!lastAnswer) return null;
+
+  const followupsRemoved = msgs.filter(
+    (m) => m.id >= lastAnswer!.id && m.role === "interviewer" && m.kind === "followup",
+  ).length;
+
+  const tx = db.transaction(() => {
+    db.prepare("DELETE FROM messages WHERE session_question_id = ? AND id >= ?").run(activeSQ.id, lastAnswer!.id);
+    if (followupsRemoved > 0) {
+      db.prepare("UPDATE session_questions SET followups_asked = MAX(0, followups_asked - ?) WHERE id = ?").run(
+        followupsRemoved,
+        activeSQ.id,
+      );
+    }
+  });
+  tx();
+
+  return lastAnswer.content;
+}
+
 // Close out the current card and advance. Returns the next active session-question,
 // or null when all main questions are exhausted.
 export function advanceToNextQuestion(sessionId: string): SessionQuestionRow | null {

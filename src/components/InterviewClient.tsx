@@ -111,6 +111,33 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
     }
   }, [answer, busy, sessionId, stt, tts]);
 
+  const retryAnswer = useCallback(async () => {
+    if (busy) return;
+    if (stt.listening) stt.stop();
+    tts.cancel();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/answer/retry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to retry");
+      }
+      const data = (await res.json()) as InterviewState & { restoredAnswer?: string };
+      setState(data);
+      setAnswer(data.restoredAnswer ?? "");
+      stt.reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to retry");
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, sessionId, stt, tts]);
+
   function toggleMic() {
     if (stt.listening) {
       stt.stop();
@@ -145,6 +172,15 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
   const finished = state.awaiting === "done";
   const generatingFeedback = state.awaiting === "feedback";
   const answered = Math.min(state.currentMainIndex, state.mainQuestionCount);
+
+  // The active question's messages run from the last "main" card onward; if the
+  // candidate has already answered it at least once, they can redo that answer.
+  const lastMainIdx = state.transcript.map((t) => t.kind).lastIndexOf("main");
+  const canRetry =
+    !finished &&
+    !generatingFeedback &&
+    lastMainIdx >= 0 &&
+    state.transcript.slice(lastMainIdx + 1).some((t) => t.kind === "answer");
 
   const providerLabel =
     state.provider.id === "gemini" ? "Google Gemini" : "Anthropic Claude";
@@ -268,6 +304,16 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
               {answer && (
                 <button className="btn-ghost text-sm" onClick={() => { setAnswer(""); stt.reset(); }} disabled={busy}>
                   Clear
+                </button>
+              )}
+              {canRetry && (
+                <button
+                  className="btn-ghost text-sm"
+                  onClick={retryAnswer}
+                  disabled={busy}
+                  title="Undo your last answer and the interviewer's reply so you can redo it"
+                >
+                  ↩ Redo last answer
                 </button>
               )}
             </div>

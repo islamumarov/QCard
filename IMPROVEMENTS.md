@@ -5,6 +5,19 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **"Retry this answer" before moving on** — candidates can now redo their most
+  recent answer to the current question instead of being locked in once they hit
+  Send. New `retryLastAnswer(sessionId)` in `db.ts` deletes the last candidate
+  `answer` message and any interviewer reply that followed it (scoped to the
+  *active* session-question — a card that's been left behind stays locked) in a
+  single transaction, rolling `followups_asked` back by however many follow-ups
+  were removed so pacing stays correct; it returns the removed text. New
+  `POST /api/answer/retry` wraps it and returns `buildInterviewState` plus
+  `restoredAnswer`. `InterviewClient` shows a **↩ Redo last answer** chip in the
+  composer whenever the active question already has an answer (detected from the
+  transcript: any `answer` turn after the last `main` card); clicking it cancels
+  TTS/STT, calls the route, and repopulates the textarea with the prior answer to
+  edit. _(iteration 14)_
 - **Mobile layout polish pass** — the app now respects small screens and notched
   devices. `layout.tsx` exports a `viewport` with `viewportFit: "cover"` so the
   page can extend under the notch/home-indicator, and `globals.css` adds
@@ -120,10 +133,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **"Retry this answer" before moving on** — let a candidate redo their last
-   answer instead of being locked in once submitted.
-2. **Per-question timer / pacing indicator** — show elapsed time per question to
+1. **Per-question timer / pacing indicator** — show elapsed time per question to
    build interview pacing awareness.
+2. **"Skip this question" option** — let a candidate move past a question they
+   can't answer (companion to Redo; advance without an answer logged).
 
 ## Backlog (ideas)
 
