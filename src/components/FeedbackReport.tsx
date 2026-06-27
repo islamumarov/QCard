@@ -1,8 +1,8 @@
 import type { Feedback, InterviewState } from "@/lib/types";
 import { buildJSON, buildMarkdown, downloadText, exportFilename } from "@/lib/export";
 
-function List({ title, items, tone }: { title: string; items: string[]; tone: "good" | "warn" | "info" }) {
-  const dot = tone === "good" ? "bg-good" : tone === "warn" ? "bg-warn" : "bg-accent2";
+function List({ title, items, tone }: { title: string; items: string[]; tone: "good" | "warn" | "info" | "accent" }) {
+  const dot = tone === "good" ? "bg-good" : tone === "warn" ? "bg-warn" : tone === "accent" ? "bg-accent" : "bg-accent2";
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h3>
@@ -86,6 +86,12 @@ export default function FeedbackReport({ feedback, state }: { feedback: Feedback
         <List title="What to improve" items={feedback.improvements} tone="warn" />
         <List title="What was expected" items={feedback.expectations} tone="info" />
       </div>
+
+      {feedback.advice && feedback.advice.length > 0 && (
+        <div className="mt-6 rounded-xl border border-accent/30 bg-accent/5 p-4">
+          <List title="How to improve next time" items={feedback.advice} tone="accent" />
+        </div>
+      )}
 
       {state?.pacing && <Pacing pacing={state.pacing} />}
 

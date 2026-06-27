@@ -5,6 +5,20 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **AI improvement advice in the feedback report** — beyond strengths/improvements/
+  expectations, the final report now carries an actionable "how to fix what went
+  wrong" section. New optional `advice?: string[]` on `Feedback` (and nullable
+  `advice` column on `feedbacks`, via an additive `ensureColumn` migration —
+  rows saved before the column read back `undefined`). `feedbackSystem` instructs
+  the coach to write one concrete next step per weak point (a drill, a rephrased
+  answer, or a framework component to rehearse, with a usable-not-generic
+  example); the field is added to `FEEDBACK_JSON_SCHEMA` (required) and a
+  transcript-agnostic offline default lives in `fallbackFeedback`. `generateFeedback`
+  normalizes a missing/non-array `advice` to `undefined`. `FeedbackReport` and the
+  printable `/interview/{id}/review` page render it as a distinct accent-tinted
+  "How to improve next time" block below the three lists; the Markdown export gains
+  a matching `### How to improve next time` section and the JSON export carries it
+  via the embedded `feedback` object. _(iteration 21)_
 - **Skipped count in the Markdown export header** — `buildMarkdown` now emits a
   `- **⏭ Skipped:** N question(s)` bullet in the header block (after Questions)
   whenever `state.skippedCount > 0`, with singular/plural wording, for parity with
@@ -188,14 +202,29 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Rate-limit / abuse guard on the API routes** — the answer/feedback/session
+1. **Per-session history + feedback view** — let a signed-in user open a past
+   session and see its full saved transcript and feedback in one place (build on
+   `/history`, `buildInterviewState`, and the existing `/interview/{id}/review`
+   route). The detail view should surface the saved feedback (rating, strengths,
+   improvements, expectations) and pacing/skipped for that one session.
+2. **Compare two interviews (progress diff + AI advice)** — pick two of the
+   signed-in user's sessions (e.g. same level/framework, newest vs earlier) and
+   show what improved vs what regressed across them: rating delta, pacing delta,
+   skipped delta, and a strengths/improvements diff. Feed both feedback records to
+   the LLM to generate targeted "here's what you got better at / what slipped /
+   what to focus on next" advice. New route (e.g. `/compare`) + an API endpoint
+   that calls the configured provider (gracefully degrades when no LLM key).
+3. **Rate-limit / abuse guard on the API routes** — the answer/feedback/session
    routes have no throttle; add a lightweight per-IP (or per-session) limiter so
    the LLM endpoints can't be hammered.
-2. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
+4. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
    core deck/level logic is untested; add a tsx/node test harness for the pure
    functions in `levels.ts`/`questions.ts`/`methodologies.ts`.
-3. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
+5. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
    field; consider whether a flattened summary (avg/total) helps consumers.
+6. **"Practice this advice" CTA** — link each `advice` item back into a fresh
+   session pre-filtered to the weak category/level so the candidate can drill it
+   immediately, closing the feedback→practice loop.
 
 ## Backlog (ideas)
 

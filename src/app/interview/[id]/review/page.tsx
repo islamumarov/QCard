@@ -191,6 +191,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <FbList title="What to improve" items={fb.improvements} dot="bg-warn" />
             <FbList title="What was expected" items={fb.expectations} dot="bg-accent2" />
           </div>
+          {fb.advice && fb.advice.length > 0 && (
+            <div className="mt-6 rounded-xl border border-accent/30 bg-accent/5 p-4">
+              <FbList title="How to improve next time" items={fb.advice} dot="bg-accent" />
+            </div>
+          )}
         </div>
       ) : (
         <div className="deck-card p-6 text-sm text-muted">

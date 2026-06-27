@@ -110,6 +110,7 @@ export async function generateFeedback(
 
     if (typeof parsed.rating !== "number") parsed.rating = 6;
     parsed.rating = Math.max(1, Math.min(10, Math.round(parsed.rating)));
+    if (!Array.isArray(parsed.advice)) parsed.advice = undefined;
     return parsed;
   } catch (err) {
     console.error(`[${provider.id}] generateFeedback failed`, err);

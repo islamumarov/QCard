@@ -66,6 +66,7 @@ export function buildMarkdown(state: InterviewState): string {
     section("What was strong", fb.strengths);
     section("What to improve", fb.improvements);
     section("What was expected", fb.expectations);
+    if (fb.advice) section("How to improve next time", fb.advice);
   }
 
   return lines.join("\n").trimEnd() + "\n";

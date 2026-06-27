@@ -65,6 +65,7 @@ export interface FeedbackRow {
   strengths: string; // JSON array
   improvements: string; // JSON array
   expectations: string; // JSON array
+  advice: string | null; // JSON array; null on rows saved before the column existed
   overall: string;
   rating: number; // 1..10
   created_at: string;
@@ -74,6 +75,10 @@ export interface Feedback {
   strengths: string[];
   improvements: string[];
   expectations: string[];
+  // Actionable "how to fix what went wrong" steps — one concrete next step /
+  // rephrased answer / drill per weak point. Optional for backward-compat with
+  // feedback saved before the field existed.
+  advice?: string[];
   overall: string;
   rating: number;
 }

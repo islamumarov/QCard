@@ -58,6 +58,7 @@ ${lvl.feedbackCalibration}
 
 Produce honest, constructive, specific feedback as the hiring panel would: what the candidate did well, what to improve,
 and — in the "expectations" field — what a strong ${lvl.shortLabel} candidate / the interviewer would have expected (the ${lvl.shortLabel} bar).
+In the "advice" field, give actionable "how to fix what went wrong" coaching: for each weak point you named, write one concrete next step the candidate can take — a specific drill, a rephrased version of what they should have said, or a ${m.name} component to rehearse. Make each advice item directly usable, not generic ("Re-tell your migration story leading with the metric: 'I cut p99 latency 40%…'", not "quantify your impact").
 Reference the ${m.name} components and the ${lvl.shortLabel}-level themes from their actual answers. Anchor the 1-10 rating to the ${lvl.shortLabel} bar specifically — a 7/10 means "a solid ${lvl.shortLabel} answer," not a generic score. Be concrete, encouraging but candid.`;
 }
 
@@ -82,10 +83,15 @@ export const FEEDBACK_JSON_SCHEMA = {
       items: { type: "string" },
       description: "3-5 things a strong candidate / the interviewer would have expected (the bar).",
     },
+    advice: {
+      type: "array",
+      items: { type: "string" },
+      description: "3-5 concrete, actionable next steps that fix the weak points — a drill, a rephrased answer, or a component to rehearse.",
+    },
     overall: { type: "string", description: "A short overall summary paragraph." },
     rating: { type: "integer", description: "Overall performance 1-10." },
   },
-  required: ["strengths", "improvements", "expectations", "overall", "rating"],
+  required: ["strengths", "improvements", "expectations", "advice", "overall", "rating"],
   additionalProperties: false,
 } as const;
 
@@ -140,6 +146,11 @@ export function fallbackFeedback(provider: string, m: Methodology, lvl: Level) {
       "Clear ownership of decisions and trade-offs is expected.",
       `At ${lvl.shortLabel} (${lvl.title}), the bar is: ${lvl.expectationBar}`,
       `Each ${m.name} component is covered: ${m.expansion}.`,
+    ],
+    advice: [
+      `Re-tell one story leading with the result: open with the metric or outcome, then back-fill the ${m.name} steps that got you there.`,
+      "Rehearse swapping 'we' for 'I' on your weakest answer — say out loud the one decision you personally owned.",
+      `Pick the question you found hardest and drill it twice against the ${lvl.shortLabel} bar (${lvl.expectationBar}).`,
     ],
     overall: `A solid practice run, evaluated against the ${lvl.shortLabel} bar. (Offline fallback feedback — set the ${provider} API key for AI-generated, transcript-specific analysis.)`,
     rating: 6,

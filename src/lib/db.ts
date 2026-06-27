@@ -189,6 +189,7 @@ function migrate(db: Database.Database) {
   ensureColumn(db, "questions", "level_max", "INTEGER NOT NULL DEFAULT 7");
   ensureColumn(db, "sessions", "level", "TEXT NOT NULL DEFAULT 'L4'");
   ensureColumn(db, "sessions", "user_id", "TEXT");
+  ensureColumn(db, "feedbacks", "advice", "TEXT");
 }
 
 // Add a column to an existing table if it isn't already present.
@@ -409,6 +410,7 @@ export function getFeedback(sessionId: string): Feedback | null {
     strengths: JSON.parse(row.strengths),
     improvements: JSON.parse(row.improvements),
     expectations: JSON.parse(row.expectations),
+    advice: row.advice ? JSON.parse(row.advice) : undefined,
     overall: row.overall,
     rating: row.rating,
   };
@@ -516,13 +518,14 @@ export function completeSession(sessionId: string) {
 export function saveFeedback(sessionId: string, fb: Feedback) {
   getDb()
     .prepare(
-      "INSERT INTO feedbacks (session_id, strengths, improvements, expectations, overall, rating, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO feedbacks (session_id, strengths, improvements, expectations, advice, overall, rating, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .run(
       sessionId,
       JSON.stringify(fb.strengths),
       JSON.stringify(fb.improvements),
       JSON.stringify(fb.expectations),
+      fb.advice ? JSON.stringify(fb.advice) : null,
       fb.overall,
       fb.rating,
       now(),
