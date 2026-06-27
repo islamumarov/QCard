@@ -5,6 +5,19 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Rating trend sparkline on `/history`** — a small inline SVG chart of rating
+  over time now sits atop the history list so progress is visible at a glance
+  without opening `/compare`. New pure-SVG, dependency-free, server-rendered
+  `src/components/RatingTrend.tsx` plots completed-interview ratings oldest→newest
+  on a fixed 1..10 scale (so runs are comparable): an accent trend line + soft
+  area fill, dots tinted by the same green/amber/rose bands as the score badges
+  (`<title>` tooltip per dot showing date · level framework → N/10), dashed
+  threshold guides at 5 and 8, axis labels, and first/last date markers. The
+  `<figcaption>` shows the count and a signed delta-since-first chip; the whole
+  `<svg>` carries a spoken `aria-label` summary. `history/page.tsx` derives the
+  points from `getSessionsForUser` + `getFeedback` (completed sessions only,
+  reversed to chronological), and the component self-hides below 2 points. No new
+  deps, no client JS. _(iteration 25)_
 - **Compare two interviews (progress diff + AI advice)** — new `/compare` route
   lets a signed-in user pick two of their *completed* interviews and see how they
   progressed. Deterministic half lives in `src/lib/compare.ts` (`loadCompareSide`
@@ -254,9 +267,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
    immediately, closing the feedback→practice loop.
 3. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
    field; consider whether a flattened summary (avg/total) helps consumers.
-4. **Trend chart on `/history`** — a small inline sparkline of rating over time
-   (per level/framework) so progress is visible at a glance without opening
-   `/compare`. Reuses `getSessionsForUser` + `getFeedback`; pure SVG, no deps.
+4. **Filter the trend by level/framework** — the new `/history` sparkline plots
+   every completed run on one line; add lightweight (no-JS, GET-form) filters so
+   a candidate can isolate, e.g., just their L5 STAR runs. `RatingTrend` already
+   receives `levelId`/`methodologyId` per point, so this is mostly a query-param
+   filter in `history/page.tsx`.
 5. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
    latest session against the user's highest-rated one, or chart all sessions of a
    given level/framework. Builds directly on `src/lib/compare.ts`.

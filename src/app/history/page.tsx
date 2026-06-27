@@ -9,6 +9,7 @@ import { getFeedback, getSessionsForUser, getSkippedCount } from "@/lib/db";
 import { getLevel } from "@/lib/levels";
 import { getMethodology } from "@/lib/methodologies";
 import DeleteSessionButton from "@/components/DeleteSessionButton";
+import RatingTrend, { type TrendPoint } from "@/components/RatingTrend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -86,8 +87,30 @@ export default async function HistoryPage() {
     );
   }
 
+  // Rating-over-time trend: completed sessions that have feedback, oldest→newest
+  // (sessions arrive newest-first). Only meaningful with ≥2 points.
+  const trendPoints: TrendPoint[] = sessions
+    .filter((s) => s.status === "completed")
+    .map((s) => {
+      const feedback = getFeedback(s.id);
+      if (!feedback) return null;
+      const level = getLevel(s.level);
+      const methodology = getMethodology(s.methodology);
+      return {
+        rating: feedback.rating,
+        date: s.created_at,
+        level: level.shortLabel,
+        framework: methodology.name,
+        levelId: s.level,
+        methodologyId: s.methodology,
+      } satisfies TrendPoint;
+    })
+    .filter((p): p is TrendPoint => p !== null)
+    .reverse();
+
   return (
     <Shell>
+      <RatingTrend points={trendPoints} />
       <ul className="flex flex-col gap-3">
         {sessions.map((s) => {
           const level = getLevel(s.level);
