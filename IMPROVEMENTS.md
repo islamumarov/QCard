@@ -5,6 +5,21 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Unit tests for the pure deck/level/prompt logic** — the core pure functions
+  had no coverage; added a zero-new-deps test harness using Node's built-in
+  `node:test` runner via `tsx`. New `npm test` script (`tsx --test tests/*.test.ts`,
+  gated by the same `check:node` prereq as the other scripts). `tests/lib.test.ts`
+  (16 tests) pins down: `levelBand` (span math + every `QUESTION_BANK` seed yields
+  a valid 3..7 band), the level lookups (`isLevelId`/`getLevel`/`numericLevel`
+  fallback-to-default behaviour, `expectationsBlock` bullets), the methodology
+  lookups (`isMethodologyId`/`getMethodology`/`stepsBlock`/`componentList`,
+  incl. the "Situation, Task, Action, or Result" trailing-or join), the prompt
+  builders (`interviewerSystem`/`feedbackSystem` weave in framework name, level
+  title, calibration text, and every expectation bullet), and
+  `pickQuestionsForLevel` against a throwaway in-memory better-sqlite3 seeded from
+  the real `QUESTION_BANK` (exactly N distinct picks at every level, pool centred
+  near the target, never-empty on an out-of-range level, caps at pool size when N
+  exceeds it). Build stays clean — `tests/` is outside the Next app. _(iteration 26)_
 - **Rating trend sparkline on `/history`** — a small inline SVG chart of rating
   over time now sits atop the history list so progress is visible at a glance
   without opening `/compare`. New pure-SVG, dependency-free, server-rendered
@@ -259,20 +274,17 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Unit tests for `pickQuestionsForLevel`, `levelBand`, prompt builders** — the
-   core deck/level logic is untested; add a tsx/node test harness for the pure
-   functions in `levels.ts`/`questions.ts`/`methodologies.ts`.
-2. **"Practice this advice" CTA** — link each `advice` item back into a fresh
+1. **"Practice this advice" CTA** — link each `advice` item back into a fresh
    session pre-filtered to the weak category/level so the candidate can drill it
    immediately, closing the feedback→practice loop.
-3. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
+2. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
    field; consider whether a flattened summary (avg/total) helps consumers.
-4. **Filter the trend by level/framework** — the new `/history` sparkline plots
+3. **Filter the trend by level/framework** — the new `/history` sparkline plots
    every completed run on one line; add lightweight (no-JS, GET-form) filters so
    a candidate can isolate, e.g., just their L5 STAR runs. `RatingTrend` already
    receives `levelId`/`methodologyId` per point, so this is mostly a query-param
    filter in `history/page.tsx`.
-5. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
+4. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
    latest session against the user's highest-rated one, or chart all sessions of a
    given level/framework. Builds directly on `src/lib/compare.ts`.
 
@@ -281,7 +293,11 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 - Per-question timer / pacing indicator.
 - "Retry this answer" before moving on.
 - Difficulty/level mismatch warning if the deck had to widen far from target.
-- Unit tests for `pickQuestionsForLevel`, `levelBand`, methodology/level prompt builders.
+- Extend `npm test` coverage to the DB lifecycle helpers (`retryLastAnswer`,
+  `skipQuestion`, `advanceToNextQuestion`) and the export/compare pure builders
+  (`buildMarkdown`/`buildJSON`, `diffSides`) against in-memory DBs.
+- GitHub Actions CI: run `npm ci && npm test && npm run build` on push/PR (Node 22)
+  so a red test or broken build is caught before it lands on master.
 - Analytics: aggregate ratings over time per level/framework.
 - Auto-retry a 429 after the `Retry-After` window (with a countdown) instead of
   asking the candidate to resubmit manually.

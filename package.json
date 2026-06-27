@@ -12,7 +12,9 @@
     "start": "next start",
     "lint": "next lint",
     "predb:seed": "npm run check:node",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "pretest": "npm run check:node",
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
