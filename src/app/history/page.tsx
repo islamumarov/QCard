@@ -6,10 +6,11 @@
 import Link from "next/link";
 import { auth, authConfigured } from "@/auth";
 import { getFeedback, getSessionsForUser, getSkippedCount } from "@/lib/db";
-import { getLevel } from "@/lib/levels";
-import { getMethodology } from "@/lib/methodologies";
+import { getLevel, isLevelId, LEVEL_LIST } from "@/lib/levels";
+import { getMethodology, isMethodologyId, METHODOLOGY_LIST } from "@/lib/methodologies";
 import DeleteSessionButton from "@/components/DeleteSessionButton";
 import RatingTrend, { type TrendPoint } from "@/components/RatingTrend";
+import type { LevelId, MethodologyId } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +48,58 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default async function HistoryPage() {
+// A native GET-form filter so a candidate can isolate, e.g., just their L5 STAR
+// runs. No client JS — selects submit via the form's "Apply" button; "Clear"
+// is a plain link back to /history.
+function FilterBar({
+  level,
+  framework,
+}: {
+  level: LevelId | "";
+  framework: MethodologyId | "";
+}) {
+  const active = level !== "" || framework !== "";
+  return (
+    <form method="GET" className="deck-card flex flex-wrap items-end gap-3 p-4">
+      <label className="flex flex-col gap-1 text-xs text-muted">
+        Level
+        <select name="level" defaultValue={level} className="chip text-sm">
+          <option value="">All levels</option>
+          {LEVEL_LIST.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-muted">
+        Framework
+        <select name="framework" defaultValue={framework} className="chip text-sm">
+          <option value="">All frameworks</option>
+          {METHODOLOGY_LIST.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" className="btn text-sm">
+        Apply
+      </button>
+      {active && (
+        <Link href="/history" className="chip text-sm hover:bg-surface-2">
+          Clear
+        </Link>
+      )}
+    </form>
+  );
+}
+
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ level?: string; framework?: string }>;
+}) {
   // Auth not set up at all: history is meaningless because sessions are anonymous.
   if (!authConfigured) {
     return (
@@ -71,9 +123,9 @@ export default async function HistoryPage() {
     );
   }
 
-  const sessions = getSessionsForUser(user.email);
+  const allSessions = getSessionsForUser(user.email);
 
-  if (sessions.length === 0) {
+  if (allSessions.length === 0) {
     return (
       <Shell>
         <div className="deck-card p-6 text-sm text-muted">
@@ -86,6 +138,18 @@ export default async function HistoryPage() {
       </Shell>
     );
   }
+
+  // Optional level/framework filter (validated; unknown values are ignored).
+  const params = await searchParams;
+  const levelFilter: LevelId | "" = isLevelId(params.level) ? params.level : "";
+  const frameworkFilter: MethodologyId | "" = isMethodologyId(params.framework)
+    ? params.framework
+    : "";
+  const sessions = allSessions.filter(
+    (s) =>
+      (levelFilter === "" || s.level === levelFilter) &&
+      (frameworkFilter === "" || s.methodology === frameworkFilter),
+  );
 
   // Rating-over-time trend: completed sessions that have feedback, oldest→newest
   // (sessions arrive newest-first). Only meaningful with ≥2 points.
@@ -110,8 +174,19 @@ export default async function HistoryPage() {
 
   return (
     <Shell>
-      <RatingTrend points={trendPoints} />
-      <ul className="flex flex-col gap-3">
+      <FilterBar level={levelFilter} framework={frameworkFilter} />
+      {sessions.length === 0 ? (
+        <div className="deck-card p-6 text-sm text-muted">
+          No interviews match this filter.{" "}
+          <Link href="/history" className="font-semibold text-accent hover:underline">
+            Clear it
+          </Link>{" "}
+          to see all {allSessions.length}.
+        </div>
+      ) : (
+        <>
+          <RatingTrend points={trendPoints} />
+          <ul className="flex flex-col gap-3">
         {sessions.map((s) => {
           const level = getLevel(s.level);
           const methodology = getMethodology(s.methodology);
@@ -191,9 +266,11 @@ export default async function HistoryPage() {
                 <DeleteSessionButton id={s.id} label={`${level.shortLabel} · ${methodology.name}`} />
               </div>
             </li>
-          );
-        })}
-      </ul>
+              );
+            })}
+          </ul>
+        </>
+      )}
     </Shell>
   );
 }

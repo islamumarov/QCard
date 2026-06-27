@@ -5,6 +5,17 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Filter `/history` by level & framework** — a native GET-form filter bar now
+  sits atop the history page so a candidate can isolate, e.g., just their L5 STAR
+  runs. New `FilterBar` (in `history/page.tsx`) renders two `<select>`s (Level
+  from `LEVEL_LIST`, Framework from `METHODOLOGY_LIST`, each with an "All …"
+  default) plus an **Apply** submit and a **Clear** link back to `/history` —
+  no client JS, the form just GETs with `?level=&framework=`. `HistoryPage` now
+  reads `searchParams`, validates the two params with `isLevelId`/`isMethodologyId`
+  (unknown values ignored), and filters the session list once; both the
+  `RatingTrend` sparkline and the row list reflect the active filter, so the trend
+  isolates the chosen slice. When a filter matches nothing, a friendly card offers
+  to clear it back to all N sessions. _(iteration 27)_
 - **Unit tests for the pure deck/level/prompt logic** — the core pure functions
   had no coverage; added a zero-new-deps test harness using Node's built-in
   `node:test` runner via `tsx`. New `npm test` script (`tsx --test tests/*.test.ts`,
@@ -279,14 +290,12 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
    immediately, closing the feedback→practice loop.
 2. **Pacing in the JSON export header** — `pacing` is already a top-level JSON
    field; consider whether a flattened summary (avg/total) helps consumers.
-3. **Filter the trend by level/framework** — the new `/history` sparkline plots
-   every completed run on one line; add lightweight (no-JS, GET-form) filters so
-   a candidate can isolate, e.g., just their L5 STAR runs. `RatingTrend` already
-   receives `levelId`/`methodologyId` per point, so this is mostly a query-param
-   filter in `history/page.tsx`.
-4. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
+3. **Compare more than two / "vs. your best"** — extend `/compare` to diff the
    latest session against the user's highest-rated one, or chart all sessions of a
    given level/framework. Builds directly on `src/lib/compare.ts`.
+4. **Per-level/framework averages on `/history`** — now that the page can filter,
+   show a small stat row (count · avg rating · best) for the current filter slice,
+   reusing the already-loaded feedback. No new queries.
 
 ## Backlog (ideas)
 
