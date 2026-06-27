@@ -5,6 +5,15 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Done
 
+- **Per-question pacing timer** — the progress row now shows a live `⏱ M:SS`
+  chip counting time on the current question. State `elapsed` ticks once a second
+  via `setInterval` only while `awaiting === "answer"` and not `busy` (so the
+  clock pauses while the interviewer is "thinking" and stops at feedback/done);
+  it resets on `currentMainIndex` change, so follow-ups share one clock and the
+  chip reflects total time on the whole question. `pacingHint(seconds)` gives soft
+  advisory styling — neutral under 2 min, amber past ~2 min, rose past ~4 min —
+  with a `title` tip and an `aria-label`/`role="timer"` spoken time. Purely
+  advisory; never blocks submission. _(iteration 15)_
 - **"Retry this answer" before moving on** — candidates can now redo their most
   recent answer to the current question instead of being locked in once they hit
   Send. New `retryLastAnswer(sessionId)` in `db.ts` deletes the last candidate
@@ -133,10 +142,10 @@ Self-paced improvement loop. Each iteration: pick ONE item, implement, `npm run 
 
 ## Up next (highest value first)
 
-1. **Per-question timer / pacing indicator** — show elapsed time per question to
-   build interview pacing awareness.
-2. **"Skip this question" option** — let a candidate move past a question they
+1. **"Skip this question" option** — let a candidate move past a question they
    can't answer (companion to Redo; advance without an answer logged).
+2. **Pacing summary in feedback** — surface per-question times (and total) in the
+   final feedback report so candidates can review where they ran long.
 
 ## Backlog (ideas)
 

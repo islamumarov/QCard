@@ -12,6 +12,7 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [elapsed, setElapsed] = useState(0); // seconds on the current question
 
   const stt = useSpeechRecognition();
   const tts = useSpeechSynthesis();
@@ -59,6 +60,19 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
     // One utterance — back-to-back speak() calls race in Chrome and drop lines.
     tts.speak(unspoken.map((t) => t.content).join("\n\n"));
   }, [state, autoSpeak, tts]);
+
+  // ---- per-question pacing timer ----
+  // Reset whenever the active main question changes (follow-ups stay on the
+  // same clock, so candidates see total time spent on the whole question).
+  useEffect(() => {
+    setElapsed(0);
+  }, [state?.currentMainIndex]);
+  // Tick once a second only while a question is open and awaiting an answer.
+  useEffect(() => {
+    if (state?.awaiting !== "answer" || busy) return;
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [state?.awaiting, busy]);
 
   // ---- request feedback once the last question is answered ----
   useEffect(() => {
@@ -185,6 +199,8 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
   const providerLabel =
     state.provider.id === "gemini" ? "Google Gemini" : "Anthropic Claude";
 
+  const pacing = pacingHint(elapsed);
+
   return (
     <div className="flex flex-col gap-5">
       {/* level + framework + active provider */}
@@ -207,9 +223,19 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
       {/* progress */}
       <div>
         <div className="mb-2 flex items-center justify-between text-sm text-muted">
-          <span>
+          <span className="flex items-center gap-2">
             Question {Math.min(state.currentMainIndex + (finished || generatingFeedback ? 0 : 1), state.mainQuestionCount)} of{" "}
             {state.mainQuestionCount}
+            {!finished && !generatingFeedback && (
+              <span
+                className={`chip px-2 py-0.5 text-xs tabular-nums ${pacing.className}`}
+                title={pacing.title}
+                role="timer"
+                aria-label={`Time on this question: ${pacing.spoken}`}
+              >
+                ⏱ {formatElapsed(elapsed)}
+              </span>
+            )}
           </span>
           {tts.supported && (
             <div className="flex items-center gap-3">
@@ -329,6 +355,39 @@ export default function InterviewClient({ sessionId }: { sessionId: string }) {
       )}
     </div>
   );
+}
+
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Soft pacing guidance for a behavioral answer: ~2 min is a healthy target,
+// past ~4 min you're likely over-explaining. Purely advisory — never blocks.
+function pacingHint(seconds: number): {
+  className: string;
+  title: string;
+  spoken: string;
+} {
+  const spoken = `${Math.floor(seconds / 60)} min ${seconds % 60} sec`;
+  if (seconds >= 240)
+    return {
+      className: "border-rose-500/40 text-rose-400",
+      title: "Over 4 min on this question — consider wrapping up your answer.",
+      spoken,
+    };
+  if (seconds >= 120)
+    return {
+      className: "border-amber-500/40 text-amber-400",
+      title: "Past the ~2 min sweet spot — start landing your point.",
+      spoken,
+    };
+  return {
+    className: "",
+    title: "Time spent on the current question. Aim for ~2 minutes.",
+    spoken,
+  };
 }
 
 function Bubble({ turn }: { turn: Turn }) {
